@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Shf.Cli/Shf.Cli.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Shf.Cli.Tests/Shf.Cli.Tests.csproj" />
+  </Folder>
+</Solution>

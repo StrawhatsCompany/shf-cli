@@ -1,0 +1,7 @@
+using SH.Framework.Library.Cqrs.Implementation;
+
+namespace Business.Features.{{ Domain }}.{{ Operation }};
+
+public sealed class {{ Operation }}Query : Request<{{ Operation }}Response>
+{
+}

@@ -1,0 +1,11 @@
+using SH.Framework.Library.Cqrs.Implementation;
+
+namespace Business.Features.{{ Domain }}.{{ Operation }};
+
+public sealed class {{ Operation }}Handler : RequestHandler<{{ Operation }}Query, {{ Operation }}Response>
+{
+    public override Task<Result<{{ Operation }}Response>> HandleAsync({{ Operation }}Query request, CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
+    }
+}

@@ -1,0 +1,5 @@
+namespace Business.Features.{{ Domain }}.{{ Operation }};
+
+public sealed class {{ Operation }}Response
+{
+}
