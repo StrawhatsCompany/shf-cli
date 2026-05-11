@@ -8,6 +8,7 @@ var services = new ServiceCollection();
 services.AddSingleton<IProjectLocator, ProjectLocator>();
 services.AddSingleton<ITemplateRenderer, TokenTemplateRenderer>();
 services.AddSingleton<IFileWriter, FileWriter>();
+services.AddSingleton<IProcessRunner, ProcessRunner>();
 
 var app = new CommandApp(new TypeRegistrar(services));
 
