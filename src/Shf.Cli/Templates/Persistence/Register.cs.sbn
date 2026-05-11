@@ -1,0 +1,25 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+
+namespace Persistence.{{ Variant }};
+
+public static class Register{{ Variant }}Persistence
+{
+    public static IServiceCollection Add{{ Variant }}Persistence(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.Configure<{{ Variant }}Options>(configuration.GetSection({{ Variant }}Options.SectionName));
+
+        services.AddDbContext<{{ Variant }}DbContext>((sp, opts) =>
+        {
+            var options = sp.GetRequiredService<IOptions<{{ Variant }}Options>>().Value;
+            opts.{{ UseMethod }}(options.ConnectionString);
+        });
+
+        // Register your repositories here, e.g.
+        // services.AddScoped<IFooRepository, FooRepository>();
+
+        return services;
+    }
+}

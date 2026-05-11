@@ -1,0 +1,12 @@
+namespace Persistence.{{ Variant }};
+
+public sealed class {{ Variant }}Options
+{
+    public const string SectionName = "Persistence";
+
+    /// <summary>
+    /// Full connection string. Treat as a secret when it contains a password — keep it in user-secrets
+    /// (dev) or environment variables / a secret store (prod), never in committed appsettings.
+    /// </summary>
+    public required string ConnectionString { get; init; }
+}

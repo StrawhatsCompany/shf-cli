@@ -1,0 +1,14 @@
+using Microsoft.EntityFrameworkCore;
+
+namespace Persistence.{{ Variant }};
+
+public sealed class {{ Variant }}DbContext(DbContextOptions<{{ Variant }}DbContext> options) : DbContext(options)
+{
+    // Add DbSet<TEntity> properties here.
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof({{ Variant }}DbContext).Assembly);
+    }
+}
