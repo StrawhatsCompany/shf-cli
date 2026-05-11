@@ -16,7 +16,7 @@ This installs the `shf` command on your PATH.
 |---|---|---|
 | `shf make:feature <Domain>/<Operation>` | ✅ Available | Scaffold a CQRS slice (request, handler, optional response). Auto-detects Query vs Command from the operation name. |
 | `shf make:endpoint <Domain>/<Operation>` | ✅ Available | Scaffold a minimal API endpoint with full OpenAPI metadata. Auto-detects GET (query) vs POST (command) from the operation name; override with `--query` / `--command`. |
-| `shf make:entity <Domain>/<Name>` | 🚧 [#7](https://github.com/StrawhatsCompany/shf-cli/issues/7) | Scaffold a Domain entity. |
+| `shf make:entity <Domain>/<Name>` | ✅ Available | Scaffold a Domain entity (class or record) with `Id` + `CreatedAt` defaults plus user-specified properties. |
 | `shf make:provider <Name>` | 🚧 [#8](https://github.com/StrawhatsCompany/shf-cli/issues/8) | Scaffold a provider contract + project skeleton (`Business/Providers/<Name>/` + `Providers.<Name>/`). |
 | `shf make:provider-driver <Provider> <Driver>` | 🚧 [#9](https://github.com/StrawhatsCompany/shf-cli/issues/9) | Add a driver (e.g. `Smtp`, `SendGrid`) to an existing provider. |
 | `shf make:persistence <postgres\|sqlserver\|sqlite>` | 🚧 [#10](https://github.com/StrawhatsCompany/shf-cli/issues/10) | Scaffold a persistence project with EF Core context + repositories + Register class. Optional `--localdb` / `--connection-string`. |
@@ -89,6 +89,39 @@ Same as `make:feature`: name starts with `Get` / `List` / `Find` / `Search` / `R
 | `--project <path>` | auto | Override the `WebApi` project location. |
 
 The endpoint references types that live in `Business.Features.<Domain>.<Operation>`. Run `shf make:feature <Domain>/<Operation>` first if the slice doesn't exist yet — `make:endpoint` doesn't create it for you (that's intentional; the slice contract should be designed before the transport adapter).
+
+## `make:entity`
+
+```bash
+shf make:entity Orders/Order --properties "CustomerName:string?,Amount:decimal,Status:string?"
+# writes src/Domain/Entities/Orders/Order.cs:
+#   - public sealed class Order with Id (Guid), CreatedAt (DateTimeOffset),
+#     CustomerName, Amount, Status
+
+shf make:entity Weather/Forecast --record --no-id --no-timestamp \
+    --properties "Date:DateOnly,TemperatureC:int,Summary:string?"
+# writes a positional record with just the user-specified properties
+```
+
+### Defaults
+
+Every entity gets `Id` (`Guid`) and `CreatedAt` (`DateTimeOffset`) unless you opt out with `--no-id` / `--no-timestamp`. User-specified `--properties` are appended after.
+
+### Property list
+
+Comma-separated `Name:Type` pairs. Types are emitted verbatim, so `string?` makes the property nullable, `List<string>` and `decimal` work, etc.
+
+### Flags
+
+| Flag | Default | Description |
+|---|---|---|
+| `--properties <list>` | — | Comma-separated `Name:Type` pairs. |
+| `--record` | false | Emit a positional record instead of a class with `{ get; set; }` properties. |
+| `--no-id` | false | Skip the default `Id` property. |
+| `--no-timestamp` | false | Skip the default `CreatedAt` property. |
+| `--force` | false | Overwrite existing files. |
+| `--dry-run` | false | Print the file list without touching disk. |
+| `--project <path>` | auto | Override the `Domain` project location. |
 
 ## Build from source
 
