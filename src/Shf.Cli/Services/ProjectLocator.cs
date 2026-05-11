@@ -21,6 +21,25 @@ internal sealed class ProjectLocator : IProjectLocator
         return null;
     }
 
+    public string? FindWebApiProject(string startDirectory)
+    {
+        foreach (var dir in WalkUp(startDirectory))
+        {
+            var candidate = Path.Combine(dir, "src", "WebApi", "WebApi.csproj");
+            if (File.Exists(candidate))
+            {
+                return Path.GetDirectoryName(candidate);
+            }
+
+            candidate = Path.Combine(dir, "WebApi", "WebApi.csproj");
+            if (File.Exists(candidate))
+            {
+                return Path.GetDirectoryName(candidate);
+            }
+        }
+        return null;
+    }
+
     public string? FindRepoRoot(string startDirectory)
     {
         foreach (var dir in WalkUp(startDirectory))
