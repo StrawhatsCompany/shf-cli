@@ -17,8 +17,8 @@ This installs the `shf` command on your PATH.
 | `shf make:feature <Domain>/<Operation>` | ✅ Available | Scaffold a CQRS slice (request, handler, optional response). Auto-detects Query vs Command from the operation name. |
 | `shf make:endpoint <Domain>/<Operation>` | ✅ Available | Scaffold a minimal API endpoint with full OpenAPI metadata. Auto-detects GET (query) vs POST (command) from the operation name; override with `--query` / `--command`. |
 | `shf make:entity <Domain>/<Name>` | ✅ Available | Scaffold a Domain entity (class or record) with `Id` + `CreatedAt` defaults plus user-specified properties. |
-| `shf make:provider <Name>` | 🚧 [#8](https://github.com/StrawhatsCompany/shf-cli/issues/8) | Scaffold a provider contract + project skeleton (`Business/Providers/<Name>/` + `Providers.<Name>/`). |
-| `shf make:provider-driver <Provider> <Driver>` | 🚧 [#9](https://github.com/StrawhatsCompany/shf-cli/issues/9) | Add a driver (e.g. `Smtp`, `SendGrid`) to an existing provider. |
+| `shf make:provider <Name>` | ✅ Available | Scaffold a provider contract + project skeleton (`Business/Providers/<Name>/` + `Providers.<Name>/`). Optionally seeds a first driver. Updates `SHFramework.slnx`. |
+| `shf make:provider-driver <Provider> <Driver>` | ✅ Available | Add a driver to an existing provider — generates the driver class, adds it to the `ProviderType` enum, and rewrites the factory switch in place. |
 | `shf make:persistence <postgres\|sqlserver\|sqlite>` | 🚧 [#10](https://github.com/StrawhatsCompany/shf-cli/issues/10) | Scaffold a persistence project with EF Core context + repositories + Register class. Optional `--localdb` / `--connection-string`. |
 | `shf make:migration <Name>` | 🚧 [#11](https://github.com/StrawhatsCompany/shf-cli/issues/11) | Add a design-time EF Core migration to a persistence project. |
 
@@ -122,6 +122,66 @@ Comma-separated `Name:Type` pairs. Types are emitted verbatim, so `string?` make
 | `--force` | false | Overwrite existing files. |
 | `--dry-run` | false | Print the file list without touching disk. |
 | `--project <path>` | auto | Override the `Domain` project location. |
+
+## `make:provider`
+
+```bash
+shf make:provider Sms
+# writes:
+#   src/Business/Providers/Sms/ISmsProvider.cs           (marker interface)
+#   src/Business/Providers/Sms/SmsProviderCredential.cs  (extends ProviderCredential<SmsProviderType>)
+#   src/Business/Providers/Sms/SmsProviderType.cs        (empty enum)
+#   src/Providers.Sms/Providers.Sms.csproj
+#   src/Providers.Sms/ProviderFactory.cs                 (IProviderFactory<...>, NotSupportedException only)
+#   src/Providers.Sms/RegisterSmsProvider.cs             (AddSmsProvider() DI extension)
+#   src/Providers.Sms/SmsProviderResultCode.cs           (Category="SMSPROVIDER")
+# edits src/SHFramework.slnx to include the new project (alphabetical, idempotent).
+
+shf make:provider Sms --first-driver Twilio
+# everything above, plus:
+#   src/Providers.Sms/Twilio/TwilioProvider.cs           (implements ISmsProvider, primary ctor)
+# - SmsProviderType.Twilio = 0 added to the enum
+# - factory switch wired: SmsProviderType.Twilio => new TwilioProvider(credential)
+```
+
+After the files land, register the provider in `Program.cs`:
+
+```csharp
+builder.Services.AddSmsProvider();
+```
+
+### Flags
+
+| Flag | Default | Description |
+|---|---|---|
+| `--first-driver <Driver>` | — | Seed one driver immediately. Adds it to the `ProviderType` enum (= 0) and to the factory switch. |
+| `--force` | false | Overwrite existing files. |
+| `--dry-run` | false | Print the file list without touching disk. |
+| `--project <path>` | auto | Override the `Business` project location. Other paths (`Providers.<Name>/`, `SHFramework.slnx`) are derived from it. |
+
+## `make:provider-driver`
+
+Add a driver to a provider that was already scaffolded with `make:provider`. Three operations, all idempotent on re-run:
+
+```bash
+shf make:provider-driver Sms Twilio
+# writes  src/Providers.Sms/Twilio/TwilioProvider.cs
+# edits   src/Business/Providers/Sms/SmsProviderType.cs   (adds Twilio = 0,)
+# edits   src/Providers.Sms/ProviderFactory.cs            (adds switch case + using import)
+
+shf make:provider-driver Sms SendGrid
+# adds SendGrid = 1, SmsProviderType.SendGrid => new SendGridProvider(credential), and the using
+```
+
+### Flags
+
+| Flag | Default | Description |
+|---|---|---|
+| `--force` | false | Overwrite the driver file if it already exists. (Enum + factory edits are idempotent — `--force` doesn't change their behavior.) |
+| `--dry-run` | false | Print what would happen without touching disk. |
+| `--project <path>` | auto | Override the `Business` project location. |
+
+The command refuses to run when `Providers.<Provider>/Providers.<Provider>.csproj`, `Business/Providers/<Provider>/<Provider>ProviderType.cs`, or `Providers.<Provider>/ProviderFactory.cs` is missing — run `make:provider` first.
 
 ## Build from source
 
