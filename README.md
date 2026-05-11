@@ -19,7 +19,7 @@ This installs the `shf` command on your PATH.
 | `shf make:entity <Domain>/<Name>` | ✅ Available | Scaffold a Domain entity (class or record) with `Id` + `CreatedAt` defaults plus user-specified properties. |
 | `shf make:provider <Name>` | ✅ Available | Scaffold a provider contract + project skeleton (`Business/Providers/<Name>/` + `Providers.<Name>/`). Optionally seeds a first driver. Updates `SHFramework.slnx`. |
 | `shf make:provider-driver <Provider> <Driver>` | ✅ Available | Add a driver to an existing provider — generates the driver class, adds it to the `ProviderType` enum, and rewrites the factory switch in place. |
-| `shf make:persistence <postgres\|sqlserver\|sqlite>` | 🚧 [#10](https://github.com/StrawhatsCompany/shf-cli/issues/10) | Scaffold a persistence project with EF Core context + repositories + Register class. Optional `--localdb` / `--connection-string`. |
+| `shf make:persistence <postgres\|sqlserver\|sqlite>` | ✅ Available | Scaffold a persistence project with EF Core DbContext + design-time factory + Options + Register extension. Edits `SHFramework.slnx` and both `appsettings` files. `--localdb` / `--connection-string` available. |
 | `shf make:migration <Name>` | 🚧 [#11](https://github.com/StrawhatsCompany/shf-cli/issues/11) | Add a design-time EF Core migration to a persistence project. |
 
 ## `make:feature`
@@ -182,6 +182,60 @@ shf make:provider-driver Sms SendGrid
 | `--project <path>` | auto | Override the `Business` project location. |
 
 The command refuses to run when `Providers.<Provider>/Providers.<Provider>.csproj`, `Business/Providers/<Provider>/<Provider>ProviderType.cs`, or `Providers.<Provider>/ProviderFactory.cs` is missing — run `make:provider` first.
+
+## `make:persistence`
+
+Scaffolds an EF Core persistence project. Three variants — same shape, different EF provider.
+
+```bash
+shf make:persistence postgres
+# writes:
+#   src/Persistence.PostgreSql/Persistence.PostgreSql.csproj
+#   src/Persistence.PostgreSql/PostgreSqlDbContext.cs               (ApplyConfigurationsFromAssembly)
+#   src/Persistence.PostgreSql/PostgreSqlDbContextFactory.cs        (IDesignTimeDbContextFactory<>)
+#   src/Persistence.PostgreSql/PostgreSqlOptions.cs                 (ConnectionString)
+#   src/Persistence.PostgreSql/RegisterPostgreSqlPersistence.cs     (DI extension)
+# edits  src/SHFramework.slnx                                       (adds the project)
+# edits  src/WebApi/appsettings.json + appsettings.Development.json (adds "Persistence" section)
+
+shf make:persistence sqlserver --localdb
+# default conn: Server=(localdb)\mssqllocaldb;Database=AppDb;Trusted_Connection=true;
+
+shf make:persistence sqlite --connection-string "Data Source=cache.db"
+```
+
+After the files land, register the persistence in `Program.cs`:
+
+```csharp
+builder.Services.AddPostgreSqlPersistence(builder.Configuration);
+```
+
+### Design-time tooling
+
+The generated `<Variant>DbContextFactory` reads `PERSISTENCE_CONNECTION_STRING` (env var) or falls back to a compiled-in default. `dotnet ef migrations add ...` works from any working directory without dragging in `appsettings` loading; set the env var if your default isn't right.
+
+### Variants
+
+| Argument | Project name | Default connection string | EF package |
+|---|---|---|---|
+| `postgres` | `Persistence.PostgreSql` | `Host=localhost;Port=5432;Database=AppDb;Username=postgres;` | `Npgsql.EntityFrameworkCore.PostgreSQL` |
+| `sqlserver` | `Persistence.SqlServer` | `Server=localhost,1433;Database=AppDb;Trusted_Connection=true;TrustServerCertificate=true;` | `Microsoft.EntityFrameworkCore.SqlServer` |
+| `sqlserver --localdb` | `Persistence.SqlServer` | `Server=(localdb)\mssqllocaldb;Database=AppDb;Trusted_Connection=true;` | `Microsoft.EntityFrameworkCore.SqlServer` |
+| `sqlite` | `Persistence.Sqlite` | `Data Source=app.db` | `Microsoft.EntityFrameworkCore.Sqlite` |
+
+### Flags
+
+| Flag | Default | Description |
+|---|---|---|
+| `--connection-string <conn>` | variant default (or LocalDB if `--localdb`) | Override the connection string written to appsettings and used as the design-time factory's default. |
+| `--localdb` | false | sqlserver only — use the LocalDB default. Ignored for other variants. |
+| `--force` | false | Overwrite existing files. |
+| `--dry-run` | false | Print what would happen without touching disk. |
+| `--project <path>` | auto | Override the `Business` project location. |
+
+The `appsettings` edit is idempotent — re-running won't clobber a user-customized `Persistence` section.
+
+⚠️ **Secrets:** if your connection string contains a password, put it in user-secrets, not `appsettings.json`. See [`docs/SECRETS.md`](https://github.com/StrawhatsCompany/sh-framework-template/blob/main/docs/SECRETS.md) in the framework repo.
 
 ## Build from source
 

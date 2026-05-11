@@ -1,0 +1,30 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Design;
+
+namespace Persistence.{{ Variant }};
+
+/// <summary>
+/// Design-time factory used by the EF Core tooling (`dotnet ef migrations add`, `dotnet ef database update`).
+/// The runtime DbContext is wired in <see cref="Register{{ Variant }}Persistence.Add{{ Variant }}Persistence"/>
+/// against the host's configuration; this factory only needs a connection string and is intentionally
+/// independent of the host's config pipeline so it works from any working directory.
+///
+/// Set <c>PERSISTENCE_CONNECTION_STRING</c> in your shell before running EF tooling, or rely on the
+/// compiled-in default below for local development.
+/// </summary>
+public sealed class {{ Variant }}DbContextFactory : IDesignTimeDbContextFactory<{{ Variant }}DbContext>
+{
+    private const string DefaultConnectionString = "{{ DefaultConnectionString }}";
+
+    public {{ Variant }}DbContext CreateDbContext(string[] args)
+    {
+        var connectionString =
+            Environment.GetEnvironmentVariable("PERSISTENCE_CONNECTION_STRING")
+            ?? DefaultConnectionString;
+
+        var optionsBuilder = new DbContextOptionsBuilder<{{ Variant }}DbContext>();
+        optionsBuilder.{{ UseMethod }}(connectionString);
+
+        return new {{ Variant }}DbContext(optionsBuilder.Options);
+    }
+}
