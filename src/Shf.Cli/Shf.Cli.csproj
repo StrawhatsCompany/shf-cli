@@ -11,14 +11,14 @@
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>shf</ToolCommandName>
     <PackageId>StrawhatsCompany.SHFramework.Cli</PackageId>
-    <Version>0.1.6</Version>
+    <Version>0.1.7</Version>
     <Authors>Strawhats Company</Authors>
     <Description>Laravel-Artisan-style code generator for Strawhats Framework services. Scaffolds features, endpoints, entities, providers, and persistence projects.</Description>
     <PackageTags>shf;codegen;cli;dotnet-tool;cqrs</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.7" />
     <PackageReference Include="Spectre.Console.Cli" Version="0.50.0" />
   </ItemGroup>
 
