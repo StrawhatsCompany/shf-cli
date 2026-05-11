@@ -21,6 +21,23 @@ public class FactoryMutatorTests
         """;
 
     [Fact]
+    public void Preserves_the_blank_line_between_usings_and_namespace()
+    {
+        var after = FactoryMutator.AddDriverCase(EmptyFactory, "Sms", "Twilio");
+
+        // After the insert, there must still be at least one empty line between the last using
+        // statement and the `namespace` declaration. Walk lines instead of asserting on raw
+        // whitespace so the test is robust to LF / CRLF.
+        var lines = after.Replace("\r\n", "\n").Split('\n');
+        var lastUsing = Array.FindLastIndex(lines, l => l.TrimStart().StartsWith("using ", StringComparison.Ordinal));
+        var ns = Array.FindIndex(lines, l => l.TrimStart().StartsWith("namespace ", StringComparison.Ordinal));
+
+        Assert.True(lastUsing >= 0 && ns > lastUsing);
+        Assert.True(string.IsNullOrWhiteSpace(lines[lastUsing + 1]),
+            $"Expected a blank line between the last `using` and `namespace`, got: '{lines[lastUsing + 1]}'");
+    }
+
+    [Fact]
     public void Adds_using_for_the_driver_namespace()
     {
         var after = FactoryMutator.AddDriverCase(EmptyFactory, "Sms", "Twilio");
