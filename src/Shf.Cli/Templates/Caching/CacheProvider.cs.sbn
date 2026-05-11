@@ -1,0 +1,22 @@
+using Business.Caching;
+using Microsoft.Extensions.Options;
+
+namespace Caching.{{ Name }};
+
+internal sealed class {{ Name }}CacheProvider(IOptions<CacheOptions> options) : ICacheProvider
+{
+    public Task<T?> GetAsync<T>(string key, CancellationToken cancellationToken = default) =>
+        throw new NotImplementedException($"Wire {{ Name }} read for key {PrefixedKey(key)}.");
+
+    public Task SetAsync<T>(string key, T value, TimeSpan? ttl = null, CancellationToken cancellationToken = default) =>
+        throw new NotImplementedException($"Wire {{ Name }} write for key {PrefixedKey(key)} with ttl {ttl ?? options.Value.DefaultTtl}.");
+
+    public Task<bool> ExistsAsync(string key, CancellationToken cancellationToken = default) =>
+        throw new NotImplementedException($"Wire {{ Name }} exists check for key {PrefixedKey(key)}.");
+
+    public Task RemoveAsync(string key, CancellationToken cancellationToken = default) =>
+        throw new NotImplementedException($"Wire {{ Name }} delete for key {PrefixedKey(key)}.");
+
+    private string PrefixedKey(string key) =>
+        string.IsNullOrEmpty(options.Value.KeyPrefix) ? key : $"{options.Value.KeyPrefix}:{key}";
+}

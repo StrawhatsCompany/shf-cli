@@ -30,6 +30,8 @@ app.Configure(config =>
         .WithDescription("Add a new driver to an existing provider.");
     config.AddCommand<MakePersistenceCommand>("make:persistence")
         .WithDescription("Scaffold a persistence project (PostgreSQL / SQL Server / SQLite).");
+    config.AddCommand<MakeCachingCommand>("make:caching")
+        .WithDescription("Scaffold a caching provider project (Caching.<Name>) wired to ICacheProvider.");
     config.AddCommand<MakeMigrationCommand>("make:migration")
         .WithDescription("Add a design-time EF Core migration to a persistence project.");
 });
