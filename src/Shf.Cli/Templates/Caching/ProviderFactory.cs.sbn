@@ -1,0 +1,15 @@
+using Business.Caching;
+using Business.Providers;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace Caching.{{ Name }};
+
+internal sealed class ProviderFactory(IServiceProvider services) : IProviderFactory<CacheCredential, ICacheProvider>
+{
+    public ICacheProvider Create(CacheCredential credential) =>
+        credential.ProviderType switch
+        {
+            CacheProviderType.{{ Name }} => services.GetRequiredService<{{ Name }}CacheProvider>(),
+            _ => throw new NotSupportedException($"{credential.ProviderType} is not supported from Caching.{{ Name }}"),
+        };
+}
