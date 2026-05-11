@@ -1,5 +1,9 @@
 # shf-cli
 
+[![ci](https://github.com/StrawhatsCompany/shf-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/StrawhatsCompany/shf-cli/actions/workflows/ci.yml)
+[![release](https://github.com/StrawhatsCompany/shf-cli/actions/workflows/release.yml/badge.svg)](https://github.com/StrawhatsCompany/shf-cli/actions/workflows/release.yml)
+[![NuGet](https://img.shields.io/nuget/v/StrawhatsCompany.SHFramework.Cli.svg)](https://www.nuget.org/packages/StrawhatsCompany.SHFramework.Cli)
+
 A Laravel-Artisan-style code generator for [Strawhats Framework](https://github.com/StrawhatsCompany/sh-framework-template) services. Scaffolds the parts (feature slices, endpoints, entities, providers, persistence projects) the framework expects, so you can keep typing in one place and `shf make:thing`.
 
 ## Install
