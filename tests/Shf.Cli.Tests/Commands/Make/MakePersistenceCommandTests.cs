@@ -55,6 +55,58 @@ public class MakePersistenceCommandTests : IDisposable
     }
 
     [Fact]
+    public void Couchbase_generates_three_files_and_no_dbcontext()
+    {
+        var cmd = BuildCommand();
+
+        var exit = cmd.Execute(Ctx(), new MakePersistenceCommand.Settings { Variant = "couchbase" });
+
+        Assert.Equal(0, exit);
+        var projRoot = Path.Combine(_srcRoot, "Persistence.Couchbase");
+        Assert.True(File.Exists(Path.Combine(projRoot, "Persistence.Couchbase.csproj")));
+        Assert.True(File.Exists(Path.Combine(projRoot, "CouchbaseOptions.cs")));
+        Assert.True(File.Exists(Path.Combine(projRoot, "RegisterCouchbasePersistence.cs")));
+        Assert.False(File.Exists(Path.Combine(projRoot, "CouchbaseDbContext.cs")));
+        Assert.False(File.Exists(Path.Combine(projRoot, "CouchbaseDbContextFactory.cs")));
+    }
+
+    [Fact]
+    public void Couchbase_csproj_pulls_in_couchbase_packages()
+    {
+        var cmd = BuildCommand();
+
+        cmd.Execute(Ctx(), new MakePersistenceCommand.Settings { Variant = "couchbase" });
+
+        var csproj = File.ReadAllText(Path.Combine(_srcRoot, "Persistence.Couchbase", "Persistence.Couchbase.csproj"));
+        Assert.Contains("CouchbaseNetClient", csproj);
+        Assert.Contains("Couchbase.Extensions.DependencyInjection", csproj);
+        Assert.DoesNotContain("Microsoft.EntityFrameworkCore", csproj);
+    }
+
+    [Fact]
+    public void Couchbase_register_uses_AddCouchbase_not_AddDbContext()
+    {
+        var cmd = BuildCommand();
+
+        cmd.Execute(Ctx(), new MakePersistenceCommand.Settings { Variant = "couchbase" });
+
+        var register = File.ReadAllText(Path.Combine(_srcRoot, "Persistence.Couchbase", "RegisterCouchbasePersistence.cs"));
+        Assert.Contains("AddCouchbase", register);
+        Assert.DoesNotContain("AddDbContext", register);
+    }
+
+    [Fact]
+    public void Couchbase_writes_default_connection_string_to_appsettings()
+    {
+        var cmd = BuildCommand();
+
+        cmd.Execute(Ctx(), new MakePersistenceCommand.Settings { Variant = "couchbase" });
+
+        var settings = File.ReadAllText(Path.Combine(_webApiRoot, "appsettings.json"));
+        Assert.Contains("couchbase://localhost", settings);
+    }
+
+    [Fact]
     public void SqlServer_localdb_flag_overrides_the_default_connection_string()
     {
         var cmd = BuildCommand();

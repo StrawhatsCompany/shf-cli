@@ -1,0 +1,31 @@
+using Couchbase.Extensions.DependencyInjection;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+
+namespace Persistence.Couchbase;
+
+public static class RegisterCouchbasePersistence
+{
+    public static IServiceCollection AddCouchbasePersistence(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.Configure<CouchbaseOptions>(configuration.GetSection(CouchbaseOptions.SectionName));
+
+        services.AddCouchbase(opts =>
+        {
+            var options = configuration.GetSection(CouchbaseOptions.SectionName).Get<CouchbaseOptions>()
+                ?? throw new InvalidOperationException("Persistence section missing or empty.");
+            opts.ConnectionString = options.ConnectionString;
+            if (!string.IsNullOrEmpty(options.Username)) opts.UserName = options.Username;
+            if (!string.IsNullOrEmpty(options.Password)) opts.Password = options.Password;
+        });
+
+        services.AddCouchbaseBucket<IAppBucketProvider>(configuration.GetSection(CouchbaseOptions.SectionName).Get<CouchbaseOptions>()?.BucketName ?? "default");
+
+        return services;
+    }
+}
+
+public interface IAppBucketProvider : INamedBucketProvider
+{
+}

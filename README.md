@@ -19,7 +19,7 @@ This installs the `shf` command on your PATH.
 | `shf make:entity <Domain>/<Name>` | ✅ Available | Scaffold a Domain entity (class or record) with `Id` + `CreatedAt` defaults plus user-specified properties. |
 | `shf make:provider <Name>` | ✅ Available | Scaffold a provider contract + project skeleton (`Business/Providers/<Name>/` + `Providers.<Name>/`). Optionally seeds a first driver. Updates `SHFramework.slnx`. |
 | `shf make:provider-driver <Provider> <Driver>` | ✅ Available | Add a driver to an existing provider — generates the driver class, adds it to the `ProviderType` enum, and rewrites the factory switch in place. |
-| `shf make:persistence <postgres\|sqlserver\|sqlite>` | ✅ Available | Scaffold a persistence project with EF Core DbContext + design-time factory + Options + Register extension. Edits `SHFramework.slnx` and both `appsettings` files. `--localdb` / `--connection-string` available. |
+| `shf make:persistence <postgres\|sqlserver\|sqlite\|couchbase>` | ✅ Available | Scaffold a persistence project. EF Core variants (`postgres` / `sqlserver` / `sqlite`) emit DbContext + design-time factory; `couchbase` emits Couchbase SDK wiring (`AddCouchbase` + bucket provider, no EF). Edits `SHFramework.slnx` and both `appsettings` files. `--localdb` / `--connection-string` available. |
 | `shf make:caching <Name>` | ✅ Available | Scaffold a caching provider project (`Caching.<Name>/`) implementing `ICacheProvider`. Mutates `CacheProviderType` and `SHFramework.slnx`. `--with-package` adds a NuGet reference (e.g., `StackExchange.Redis`). |
 | `shf make:migration <Name>` | ✅ Available | Wrap `dotnet ef migrations add` with auto-detected persistence + startup projects. |
 
