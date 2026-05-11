@@ -1,0 +1,6 @@
+namespace Business.Providers.{{ Name }};
+
+public enum {{ Name }}ProviderType
+{
+{{ EnumMembers }}
+}

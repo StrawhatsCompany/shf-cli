@@ -1,0 +1,8 @@
+using Business.Providers.{{ Name }};
+
+namespace Providers.{{ Name }}.{{ Driver }};
+
+internal sealed class {{ Driver }}Provider({{ Name }}ProviderCredential credential) : I{{ Name }}Provider
+{
+    // TODO: implement {{ Name }} operations for the {{ Driver }} driver using `credential`.
+}

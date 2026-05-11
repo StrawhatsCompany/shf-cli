@@ -1,0 +1,11 @@
+using SH.Framework.Library.Cqrs.Implementation;
+
+namespace Providers.{{ Name }};
+
+public class {{ Name }}ProviderResultCode
+{
+    public const string Category = "{{ NameUpper }}PROVIDER";
+
+    // Add domain-specific result codes here:
+    // public static ResultCode SomeFailure => ResultCode.Instance(1000, Category, "Description");
+}

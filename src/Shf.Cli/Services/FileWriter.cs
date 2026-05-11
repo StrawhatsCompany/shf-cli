@@ -18,4 +18,22 @@ internal sealed class FileWriter : IFileWriter
         File.WriteAllText(path, content);
         return true;
     }
+
+    public string ApplyEdit(string path, Func<string, string> transform, bool dryRun)
+    {
+        if (!File.Exists(path))
+        {
+            throw new IOException($"File not found: {path}.");
+        }
+
+        var original = File.ReadAllText(path);
+        var updated = transform(original);
+
+        if (!dryRun && !ReferenceEquals(original, updated) && original != updated)
+        {
+            File.WriteAllText(path, updated);
+        }
+
+        return updated;
+    }
 }

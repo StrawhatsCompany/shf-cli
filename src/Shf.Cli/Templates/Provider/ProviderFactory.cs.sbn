@@ -1,0 +1,13 @@
+using Business.Providers;
+using Business.Providers.{{ Name }};
+{{ DriverUsings }}
+namespace Providers.{{ Name }};
+
+internal sealed class ProviderFactory : IProviderFactory<{{ Name }}ProviderCredential, I{{ Name }}Provider>
+{
+    public I{{ Name }}Provider Create({{ Name }}ProviderCredential credential) =>
+        credential.ProviderType switch
+        {
+{{ FactoryCases }}            _ => throw new NotSupportedException($"{credential.ProviderType} is not supported from Providers.{{ Name }}")
+        };
+}
