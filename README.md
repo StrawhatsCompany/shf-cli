@@ -20,7 +20,7 @@ This installs the `shf` command on your PATH.
 | `shf make:provider <Name>` | ✅ Available | Scaffold a provider contract + project skeleton (`Business/Providers/<Name>/` + `Providers.<Name>/`). Optionally seeds a first driver. Updates `SHFramework.slnx`. |
 | `shf make:provider-driver <Provider> <Driver>` | ✅ Available | Add a driver to an existing provider — generates the driver class, adds it to the `ProviderType` enum, and rewrites the factory switch in place. |
 | `shf make:persistence <postgres\|sqlserver\|sqlite>` | ✅ Available | Scaffold a persistence project with EF Core DbContext + design-time factory + Options + Register extension. Edits `SHFramework.slnx` and both `appsettings` files. `--localdb` / `--connection-string` available. |
-| `shf make:migration <Name>` | 🚧 [#11](https://github.com/StrawhatsCompany/shf-cli/issues/11) | Add a design-time EF Core migration to a persistence project. |
+| `shf make:migration <Name>` | ✅ Available | Wrap `dotnet ef migrations add` with auto-detected persistence + startup projects. |
 
 ## `make:feature`
 
@@ -236,6 +236,38 @@ The generated `<Variant>DbContextFactory` reads `PERSISTENCE_CONNECTION_STRING` 
 The `appsettings` edit is idempotent — re-running won't clobber a user-customized `Persistence` section.
 
 ⚠️ **Secrets:** if your connection string contains a password, put it in user-secrets, not `appsettings.json`. See [`docs/SECRETS.md`](https://github.com/StrawhatsCompany/sh-framework-template/blob/main/docs/SECRETS.md) in the framework repo.
+
+## `make:migration`
+
+Thin wrapper around `dotnet ef migrations add` that auto-detects the persistence project and the WebApi startup project. Saves you the four `--project` / `--startup-project` / `--output-dir` flags every time.
+
+```bash
+shf make:migration AddForecastTable
+# Equivalent to:
+# dotnet ef migrations add AddForecastTable \
+#     --project src/Persistence.PostgreSql/Persistence.PostgreSql.csproj \
+#     --startup-project src/WebApi/WebApi.csproj \
+#     --output-dir Migrations
+```
+
+### Multiple persistences
+
+If you have more than one `Persistence.*` project under `src/`, the command refuses to guess — pass `--persistence`:
+
+```bash
+shf make:migration RenameUserEmail --persistence Persistence.Sqlite
+```
+
+### Flags
+
+| Flag | Default | Description |
+|---|---|---|
+| `--persistence <name>` | auto when there is exactly one `Persistence.*` project | Project to add the migration to. |
+| `--output-dir <dir>` | `Migrations` | Folder for the generated migration files, relative to the persistence project. |
+| `--dry-run` | false | Print the planned `dotnet ef` invocation without running it. |
+| `--project <path>` | auto | Override the `Business` project location. |
+
+Requires `dotnet-ef` to be installed (`dotnet tool install -g dotnet-ef`).
 
 ## Build from source
 
