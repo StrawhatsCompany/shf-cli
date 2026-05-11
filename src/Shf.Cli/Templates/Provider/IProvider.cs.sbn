@@ -1,0 +1,7 @@
+namespace Business.Providers.{{ Name }};
+
+public interface I{{ Name }}Provider
+{
+    // TODO: define operations for the {{ Name }} provider, e.g.
+    // Task<ProviderResult<SomeContract.Response>> DoSomethingAsync(SomeContract.Request request, CancellationToken cancellationToken = default);
+}

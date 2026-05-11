@@ -1,0 +1,15 @@
+using Business.Providers;
+using Business.Providers.{{ Name }};
+using Microsoft.Extensions.DependencyInjection;
+
+namespace Providers.{{ Name }};
+
+public static class Register{{ Name }}Provider
+{
+    public static IServiceCollection Add{{ Name }}Provider(this IServiceCollection services)
+    {
+        services.AddSingleton<IProviderFactory<{{ Name }}ProviderCredential, I{{ Name }}Provider>, ProviderFactory>();
+
+        return services;
+    }
+}
