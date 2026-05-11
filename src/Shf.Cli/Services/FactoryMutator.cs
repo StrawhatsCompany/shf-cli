@@ -4,7 +4,9 @@ namespace Shf.Cli.Services;
 
 internal static partial class FactoryMutator
 {
-    [GeneratedRegex(@"^using [^;]+;\s*$", RegexOptions.Compiled | RegexOptions.Multiline)]
+    // Do NOT include trailing `\s*$` — that would gobble the blank line between the using block
+    // and the namespace declaration, leaving the inserted import abutted against `namespace`.
+    [GeneratedRegex(@"^using [^;]+;", RegexOptions.Compiled | RegexOptions.Multiline)]
     private static partial Regex UsingLine();
 
     [GeneratedRegex(@"^[ \t]+_\s*=>\s*throw", RegexOptions.Compiled | RegexOptions.Multiline)]
