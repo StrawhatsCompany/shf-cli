@@ -15,12 +15,12 @@ This installs the `shf` command on your PATH.
 | Command | Status | What it does |
 |---|---|---|
 | `shf make:feature <Domain>/<Operation>` | ✅ Available | Scaffold a CQRS slice (request, handler, optional response). Auto-detects Query vs Command from the operation name. |
-| `shf make:endpoint <name>` | 🚧 Backlog | Scaffold a minimal API endpoint with full OpenAPI metadata. |
-| `shf make:entity <Domain>/<Name>` | 🚧 Backlog | Scaffold a Domain entity. |
-| `shf make:provider <Name>` | 🚧 Backlog | Scaffold a provider contract + project skeleton (`Business/Providers/<Name>/` + `Providers.<Name>/`). |
-| `shf make:provider-driver <Provider> <Driver>` | 🚧 Backlog | Add a driver (e.g. `Smtp`, `SendGrid`) to an existing provider. |
-| `shf make:persistence <postgres\|sqlserver\|sqlite>` | 🚧 Backlog | Scaffold a persistence project with EF Core context + repositories + Register class. Optional `--localdb` / `--connection-string`. |
-| `shf make:migration <Name>` | 🚧 Backlog | Add a design-time EF Core migration to a persistence project. |
+| `shf make:endpoint <name>` | 🚧 [#6](https://github.com/StrawhatsCompany/shf-cli/issues/6) | Scaffold a minimal API endpoint with full OpenAPI metadata. |
+| `shf make:entity <Domain>/<Name>` | 🚧 [#7](https://github.com/StrawhatsCompany/shf-cli/issues/7) | Scaffold a Domain entity. |
+| `shf make:provider <Name>` | 🚧 [#8](https://github.com/StrawhatsCompany/shf-cli/issues/8) | Scaffold a provider contract + project skeleton (`Business/Providers/<Name>/` + `Providers.<Name>/`). |
+| `shf make:provider-driver <Provider> <Driver>` | 🚧 [#9](https://github.com/StrawhatsCompany/shf-cli/issues/9) | Add a driver (e.g. `Smtp`, `SendGrid`) to an existing provider. |
+| `shf make:persistence <postgres\|sqlserver\|sqlite>` | 🚧 [#10](https://github.com/StrawhatsCompany/shf-cli/issues/10) | Scaffold a persistence project with EF Core context + repositories + Register class. Optional `--localdb` / `--connection-string`. |
+| `shf make:migration <Name>` | 🚧 [#11](https://github.com/StrawhatsCompany/shf-cli/issues/11) | Add a design-time EF Core migration to a persistence project. |
 
 ## `make:feature`
 
