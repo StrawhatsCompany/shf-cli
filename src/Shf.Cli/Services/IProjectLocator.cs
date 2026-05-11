@@ -20,4 +20,10 @@ public interface IProjectLocator
     /// a `src` folder with a `WebApi` project. Returns the absolute path of that `src/WebApi`.
     /// </summary>
     string? FindWebApiProject(string startDirectory);
+
+    /// <summary>
+    /// Walks up from <paramref name="startDirectory"/> until it finds a directory containing
+    /// a `src` folder with a `Domain` project. Returns the absolute path of that `src/Domain`.
+    /// </summary>
+    string? FindDomainProject(string startDirectory);
 }

@@ -1,0 +1,6 @@
+namespace Domain.Entities.{{ Domain }};
+
+public sealed class {{ Name }}
+{
+{{ Properties }}
+}

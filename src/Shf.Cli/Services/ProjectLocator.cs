@@ -40,6 +40,25 @@ internal sealed class ProjectLocator : IProjectLocator
         return null;
     }
 
+    public string? FindDomainProject(string startDirectory)
+    {
+        foreach (var dir in WalkUp(startDirectory))
+        {
+            var candidate = Path.Combine(dir, "src", "Domain", "Domain.csproj");
+            if (File.Exists(candidate))
+            {
+                return Path.GetDirectoryName(candidate);
+            }
+
+            candidate = Path.Combine(dir, "Domain", "Domain.csproj");
+            if (File.Exists(candidate))
+            {
+                return Path.GetDirectoryName(candidate);
+            }
+        }
+        return null;
+    }
+
     public string? FindRepoRoot(string startDirectory)
     {
         foreach (var dir in WalkUp(startDirectory))
