@@ -14,4 +14,10 @@ public interface IProjectLocator
     /// or a `.slnx`/`.sln` file.
     /// </summary>
     string? FindRepoRoot(string startDirectory);
+
+    /// <summary>
+    /// Walks up from <paramref name="startDirectory"/> until it finds a directory containing
+    /// a `src` folder with a `WebApi` project. Returns the absolute path of that `src/WebApi`.
+    /// </summary>
+    string? FindWebApiProject(string startDirectory);
 }

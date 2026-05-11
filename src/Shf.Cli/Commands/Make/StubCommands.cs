@@ -20,7 +20,6 @@ public abstract class StubCommand(string name) : Command<StubCommand.Settings>
     }
 }
 
-public sealed class MakeEndpointCommand() : StubCommand("make:endpoint");
 public sealed class MakeEntityCommand() : StubCommand("make:entity");
 public sealed class MakeProviderCommand() : StubCommand("make:provider");
 public sealed class MakeProviderDriverCommand() : StubCommand("make:provider-driver");

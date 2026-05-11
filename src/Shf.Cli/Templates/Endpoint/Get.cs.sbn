@@ -1,0 +1,26 @@
+using Business.Features.{{ Domain }}.{{ Operation }};
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using SH.Framework.Library.AspNetCore;
+using SH.Framework.Library.Cqrs.Implementation;
+using WebApi.Common;
+
+namespace WebApi.Endpoints.{{ Domain }};
+
+public sealed class {{ Operation }}Endpoint : IEndpoint
+{
+    public static string Route => "{{ Route }}";
+
+    public static void Map(IEndpointRouteBuilder app)
+    {
+        app.MapGet(Route, async ([FromServices] IProjector projector, CancellationToken ct = default) =>
+                (await projector.SendAsync(new {{ Operation }}Query(), ct)).ToHttp())
+            .WithName("{{ Operation }}")
+            .WithSummary("{{ Summary }}")
+            .WithTags("{{ Domain }}")
+            .Produces<Result<{{ Operation }}Response>>(StatusCodes.Status200OK)
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status500InternalServerError);
+    }
+}
