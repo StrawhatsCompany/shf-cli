@@ -13,7 +13,7 @@ public sealed class MakePersistenceCommand(
     public sealed class Settings : CommandSettings
     {
         [CommandArgument(0, "<variant>")]
-        [Description("One of: postgres, sqlserver, sqlite.")]
+        [Description("One of: postgres, sqlserver, sqlite, couchbase.")]
         public required string Variant { get; init; }
 
         [CommandOption("--connection-string <CONN>")]
@@ -41,9 +41,10 @@ public sealed class MakePersistenceCommand(
         string Name,
         string EfPackage,
         string EfPackageVersion,
-        string UseMethod,
+        string? UseMethod,
         string DefaultConnectionString,
-        string? LocalDbConnectionString);
+        string? LocalDbConnectionString,
+        bool IsCouchbase = false);
 
     internal static readonly Dictionary<string, PersistenceVariant> Variants = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -68,13 +69,24 @@ public sealed class MakePersistenceCommand(
             UseMethod: "UseSqlite",
             DefaultConnectionString: "Data Source=app.db",
             LocalDbConnectionString: null),
+        ["couchbase"] = new(
+            Name: "Couchbase",
+            EfPackage: "CouchbaseNetClient",
+            EfPackageVersion: "3.6.5",
+            UseMethod: null,
+            DefaultConnectionString: "couchbase://localhost",
+            LocalDbConnectionString: null,
+            IsCouchbase: true),
     };
+
+    private const string CouchbaseClientVersion = "3.6.5";
+    private const string CouchbaseDiVersion = "3.6.5";
 
     public override int Execute(CommandContext context, Settings settings)
     {
         if (!Variants.TryGetValue(settings.Variant, out var variant))
         {
-            AnsiConsole.MarkupLine($"[red]Unknown variant '{settings.Variant}'. Pick one of: postgres, sqlserver, sqlite.[/]");
+            AnsiConsole.MarkupLine($"[red]Unknown variant '{settings.Variant}'. Pick one of: postgres, sqlserver, sqlite, couchbase.[/]");
             return 1;
         }
 
@@ -104,17 +116,27 @@ public sealed class MakePersistenceCommand(
             EfPackageVersion = variant.EfPackageVersion,
             UseMethod = variant.UseMethod,
             DefaultConnectionString = connectionString,
+            CouchbaseClientVersion = CouchbaseClientVersion,
+            CouchbaseDiVersion = CouchbaseDiVersion,
         };
 
-        var templates = Path.Combine(AppContext.BaseDirectory, "Templates", "Persistence");
-        var plan = new (string template, string target)[]
-        {
-            ("Csproj.sbn", Path.Combine(projectRoot, $"Persistence.{variant.Name}.csproj")),
-            ("DbContext.cs.sbn", Path.Combine(projectRoot, $"{variant.Name}DbContext.cs")),
-            ("DbContextFactory.cs.sbn", Path.Combine(projectRoot, $"{variant.Name}DbContextFactory.cs")),
-            ("Options.cs.sbn", Path.Combine(projectRoot, $"{variant.Name}Options.cs")),
-            ("Register.cs.sbn", Path.Combine(projectRoot, $"Register{variant.Name}Persistence.cs")),
-        };
+        var templatesRoot = Path.Combine(AppContext.BaseDirectory, "Templates", "Persistence");
+        var templates = variant.IsCouchbase ? Path.Combine(templatesRoot, "Couchbase") : templatesRoot;
+        var plan = variant.IsCouchbase
+            ? new (string template, string target)[]
+            {
+                ("Csproj.sbn", Path.Combine(projectRoot, $"Persistence.{variant.Name}.csproj")),
+                ("Options.cs.sbn", Path.Combine(projectRoot, $"{variant.Name}Options.cs")),
+                ("Register.cs.sbn", Path.Combine(projectRoot, $"Register{variant.Name}Persistence.cs")),
+            }
+            : new (string template, string target)[]
+            {
+                ("Csproj.sbn", Path.Combine(projectRoot, $"Persistence.{variant.Name}.csproj")),
+                ("DbContext.cs.sbn", Path.Combine(projectRoot, $"{variant.Name}DbContext.cs")),
+                ("DbContextFactory.cs.sbn", Path.Combine(projectRoot, $"{variant.Name}DbContextFactory.cs")),
+                ("Options.cs.sbn", Path.Combine(projectRoot, $"{variant.Name}Options.cs")),
+                ("Register.cs.sbn", Path.Combine(projectRoot, $"Register{variant.Name}Persistence.cs")),
+            };
 
         foreach (var (templateName, target) in plan)
         {
@@ -170,7 +192,15 @@ public sealed class MakePersistenceCommand(
         }
 
         AnsiConsole.MarkupLine($"  [dim]hint:[/] register in [cyan]Program.cs[/] with [yellow]builder.Services.Add{variant.Name}Persistence(builder.Configuration);[/]");
-        AnsiConsole.MarkupLine($"  [dim]design-time:[/] set [yellow]PERSISTENCE_CONNECTION_STRING[/] or rely on the compiled-in default when running [yellow]dotnet ef migrations add[/].");
+        if (variant.IsCouchbase)
+        {
+            AnsiConsole.MarkupLine($"  [dim]secrets:[/] set [yellow]Persistence:Username[/] and [yellow]Persistence:Password[/] via [yellow]dotnet user-secrets[/]; set [yellow]Persistence:BucketName[/] in appsettings.");
+            AnsiConsole.MarkupLine($"  [dim]note:[/] Couchbase is not EF Core — no [yellow]make:migration[/] flow. Manage indexes / schema through the Couchbase console or SDK.");
+        }
+        else
+        {
+            AnsiConsole.MarkupLine($"  [dim]design-time:[/] set [yellow]PERSISTENCE_CONNECTION_STRING[/] or rely on the compiled-in default when running [yellow]dotnet ef migrations add[/].");
+        }
         return 0;
     }
 }

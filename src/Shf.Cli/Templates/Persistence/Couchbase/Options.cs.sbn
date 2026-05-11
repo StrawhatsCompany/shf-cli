@@ -1,0 +1,11 @@
+namespace Persistence.Couchbase;
+
+public sealed class CouchbaseOptions
+{
+    public const string SectionName = "Persistence";
+
+    public required string ConnectionString { get; init; }
+    public string? Username { get; init; }
+    public string? Password { get; init; }
+    public required string BucketName { get; init; }
+}
