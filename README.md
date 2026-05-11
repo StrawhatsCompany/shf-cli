@@ -4,7 +4,7 @@
 [![release](https://github.com/StrawhatsCompany/shf-cli/actions/workflows/release.yml/badge.svg)](https://github.com/StrawhatsCompany/shf-cli/actions/workflows/release.yml)
 [![NuGet](https://img.shields.io/nuget/v/StrawhatsCompany.SHFramework.Cli.svg)](https://www.nuget.org/packages/StrawhatsCompany.SHFramework.Cli)
 
-A Laravel-Artisan-style code generator for [Strawhats Framework](https://github.com/StrawhatsCompany/sh-framework-template) services. Scaffolds the parts (feature slices, endpoints, entities, providers, persistence projects) the framework expects, so you can keep typing in one place and `shf make:thing`.
+A Laravel-Artisan-style code generator for [Strawhats Framework](https://github.com/StrawhatsCompany/sh-framework-template) services. Scaffolds the parts (feature slices, endpoints, entities, providers, persistence projects) the framework expects, so you can keep typing in one place and `dotnet shf make:thing`.
 
 ## Install
 
@@ -12,31 +12,31 @@ A Laravel-Artisan-style code generator for [Strawhats Framework](https://github.
 dotnet tool install -g StrawhatsCompany.SHFramework.Cli
 ```
 
-This installs the `shf` command on your PATH.
+This installs the `dotnet-shf` command on your PATH, invoked as `dotnet shf <command>`.
 
 ## Commands
 
 | Command | Status | What it does |
 |---|---|---|
-| `shf make:feature <Domain>/<Operation>` | ✅ Available | Scaffold a CQRS slice (request, handler, optional response). Auto-detects Query vs Command from the operation name. |
-| `shf make:endpoint <Domain>/<Operation>` | ✅ Available | Scaffold a minimal API endpoint with full OpenAPI metadata. Auto-detects GET (query) vs POST (command) from the operation name; override with `--query` / `--command`. |
-| `shf make:entity <Domain>/<Name>` | ✅ Available | Scaffold a Domain entity (class or record) with `Id` + `CreatedAt` defaults plus user-specified properties. |
-| `shf make:provider <Name>` | ✅ Available | Scaffold a provider contract + project skeleton (`Business/Providers/<Name>/` + `Providers.<Name>/`). Optionally seeds a first driver. Updates `SHFramework.slnx`. |
-| `shf make:provider-driver <Provider> <Driver>` | ✅ Available | Add a driver to an existing provider — generates the driver class, adds it to the `ProviderType` enum, and rewrites the factory switch in place. |
-| `shf make:persistence <postgres\|sqlserver\|sqlite\|couchbase>` | ✅ Available | Scaffold a persistence project. EF Core variants (`postgres` / `sqlserver` / `sqlite`) emit DbContext + design-time factory; `couchbase` emits Couchbase SDK wiring (`AddCouchbase` + bucket provider, no EF). Edits `SHFramework.slnx` and both `appsettings` files. `--localdb` / `--connection-string` available. |
-| `shf make:caching <Name>` | ✅ Available | Scaffold a caching provider project (`Caching.<Name>/`) implementing `ICacheProvider`. Mutates `CacheProviderType` and `SHFramework.slnx`. `--with-package` adds a NuGet reference (e.g., `StackExchange.Redis`). |
-| `shf make:migration <Name>` | ✅ Available | Wrap `dotnet ef migrations add` with auto-detected persistence + startup projects. |
+| `dotnet shf make:feature <Domain>/<Operation>` | ✅ Available | Scaffold a CQRS slice (request, handler, optional response). Auto-detects Query vs Command from the operation name. |
+| `dotnet shf make:endpoint <Domain>/<Operation>` | ✅ Available | Scaffold a minimal API endpoint with full OpenAPI metadata. Auto-detects GET (query) vs POST (command) from the operation name; override with `--query` / `--command`. |
+| `dotnet shf make:entity <Domain>/<Name>` | ✅ Available | Scaffold a Domain entity (class or record) with `Id` + `CreatedAt` defaults plus user-specified properties. |
+| `dotnet shf make:provider <Name>` | ✅ Available | Scaffold a provider contract + project skeleton (`Business/Providers/<Name>/` + `Providers.<Name>/`). Optionally seeds a first driver. Updates `SHFramework.slnx`. |
+| `dotnet shf make:provider-driver <Provider> <Driver>` | ✅ Available | Add a driver to an existing provider — generates the driver class, adds it to the `ProviderType` enum, and rewrites the factory switch in place. |
+| `dotnet shf make:persistence <postgres\|sqlserver\|sqlite\|couchbase>` | ✅ Available | Scaffold a persistence project. EF Core variants (`postgres` / `sqlserver` / `sqlite`) emit DbContext + design-time factory; `couchbase` emits Couchbase SDK wiring (`AddCouchbase` + bucket provider, no EF). Edits `SHFramework.slnx` and both `appsettings` files. `--localdb` / `--connection-string` available. |
+| `dotnet shf make:caching <Name>` | ✅ Available | Scaffold a caching provider project (`Caching.<Name>/`) implementing `ICacheProvider`. Mutates `CacheProviderType` and `SHFramework.slnx`. `--with-package` adds a NuGet reference (e.g., `StackExchange.Redis`). |
+| `dotnet shf make:migration <Name>` | ✅ Available | Wrap `dotnet ef migrations add` with auto-detected persistence + startup projects. |
 
 ## `make:feature`
 
 ```bash
-shf make:feature Weather/GetForecastsByCity
+dotnet shf make:feature Weather/GetForecastsByCity
 # writes:
 #   src/Business/Features/Weather/GetForecastsByCity/GetForecastsByCityQuery.cs
 #   src/Business/Features/Weather/GetForecastsByCity/GetForecastsByCityHandler.cs
 #   src/Business/Features/Weather/GetForecastsByCity/GetForecastsByCityResponse.cs
 
-shf make:feature Mails/SendMail
+dotnet shf make:feature Mails/SendMail
 # writes:
 #   src/Business/Features/Mails/SendMail/SendMailCommand.cs
 #   src/Business/Features/Mails/SendMail/SendMailHandler.cs
@@ -55,25 +55,25 @@ If the operation name starts with `Get` / `List` / `Find` / `Search` / `Read` / 
 | `--no-response` | false | When generating a query, skip the Response class. |
 | `--force` | false | Overwrite existing files. |
 | `--dry-run` | false | Print the file list without touching disk. |
-| `--project <path>` | auto | Override the `Business` project location. By default `shf` walks up from cwd looking for `src/Business/Business.csproj`. |
+| `--project <path>` | auto | Override the `Business` project location. By default the tool walks up from cwd looking for `src/Business/Business.csproj`. |
 
 ## `make:endpoint`
 
 ```bash
-shf make:endpoint Weather/GetForecastsByCity
+dotnet shf make:endpoint Weather/GetForecastsByCity
 # writes src/WebApi/Endpoints/Weather/GetForecastsByCityEndpoint.cs:
 #   - GET api/v1/Weather/GetForecastsByCity
 #   - wired to Business.Features.Weather.GetForecastsByCity.GetForecastsByCityQuery
 #   - Produces<Result<GetForecastsByCityResponse>>(200) + ProducesValidationProblem + 400 + 500
 #   - WithName/WithSummary/WithTags filled in
 
-shf make:endpoint Orders/PlaceOrder
+dotnet shf make:endpoint Orders/PlaceOrder
 # writes src/WebApi/Endpoints/Orders/PlaceOrderEndpoint.cs:
 #   - POST api/v1/Orders/PlaceOrder
 #   - wired to PlaceOrderCommand from the request body
 #   - Produces<Result>(200) (no response payload for commands)
 
-shf make:endpoint Weather/Settle --command --route "api/v1/weather/settle"
+dotnet shf make:endpoint Weather/Settle --command --route "api/v1/weather/settle"
 # explicit override: POST instead of the GET the name heuristic would pick
 ```
 
@@ -93,17 +93,17 @@ Same as `make:feature`: name starts with `Get` / `List` / `Find` / `Search` / `R
 | `--dry-run` | false | Print the file list without touching disk. |
 | `--project <path>` | auto | Override the `WebApi` project location. |
 
-The endpoint references types that live in `Business.Features.<Domain>.<Operation>`. Run `shf make:feature <Domain>/<Operation>` first if the slice doesn't exist yet — `make:endpoint` doesn't create it for you (that's intentional; the slice contract should be designed before the transport adapter).
+The endpoint references types that live in `Business.Features.<Domain>.<Operation>`. Run `dotnet shf make:feature <Domain>/<Operation>` first if the slice doesn't exist yet — `make:endpoint` doesn't create it for you (that's intentional; the slice contract should be designed before the transport adapter).
 
 ## `make:entity`
 
 ```bash
-shf make:entity Orders/Order --properties "CustomerName:string?,Amount:decimal,Status:string?"
+dotnet shf make:entity Orders/Order --properties "CustomerName:string?,Amount:decimal,Status:string?"
 # writes src/Domain/Entities/Orders/Order.cs:
 #   - public sealed class Order with Id (Guid), CreatedAt (DateTimeOffset),
 #     CustomerName, Amount, Status
 
-shf make:entity Weather/Forecast --record --no-id --no-timestamp \
+dotnet shf make:entity Weather/Forecast --record --no-id --no-timestamp \
     --properties "Date:DateOnly,TemperatureC:int,Summary:string?"
 # writes a positional record with just the user-specified properties
 ```
@@ -131,7 +131,7 @@ Comma-separated `Name:Type` pairs. Types are emitted verbatim, so `string?` make
 ## `make:provider`
 
 ```bash
-shf make:provider Sms
+dotnet shf make:provider Sms
 # writes:
 #   src/Business/Providers/Sms/ISmsProvider.cs           (marker interface)
 #   src/Business/Providers/Sms/SmsProviderCredential.cs  (extends ProviderCredential<SmsProviderType>)
@@ -142,7 +142,7 @@ shf make:provider Sms
 #   src/Providers.Sms/SmsProviderResultCode.cs           (Category="SMSPROVIDER")
 # edits src/SHFramework.slnx to include the new project (alphabetical, idempotent).
 
-shf make:provider Sms --first-driver Twilio
+dotnet shf make:provider Sms --first-driver Twilio
 # everything above, plus:
 #   src/Providers.Sms/Twilio/TwilioProvider.cs           (implements ISmsProvider, primary ctor)
 # - SmsProviderType.Twilio = 0 added to the enum
@@ -169,12 +169,12 @@ builder.Services.AddSmsProvider();
 Add a driver to a provider that was already scaffolded with `make:provider`. Three operations, all idempotent on re-run:
 
 ```bash
-shf make:provider-driver Sms Twilio
+dotnet shf make:provider-driver Sms Twilio
 # writes  src/Providers.Sms/Twilio/TwilioProvider.cs
 # edits   src/Business/Providers/Sms/SmsProviderType.cs   (adds Twilio = 0,)
 # edits   src/Providers.Sms/ProviderFactory.cs            (adds switch case + using import)
 
-shf make:provider-driver Sms SendGrid
+dotnet shf make:provider-driver Sms SendGrid
 # adds SendGrid = 1, SmsProviderType.SendGrid => new SendGridProvider(credential), and the using
 ```
 
@@ -193,7 +193,7 @@ The command refuses to run when `Providers.<Provider>/Providers.<Provider>.cspro
 Scaffolds an EF Core persistence project. Three variants — same shape, different EF provider.
 
 ```bash
-shf make:persistence postgres
+dotnet shf make:persistence postgres
 # writes:
 #   src/Persistence.PostgreSql/Persistence.PostgreSql.csproj
 #   src/Persistence.PostgreSql/PostgreSqlDbContext.cs               (ApplyConfigurationsFromAssembly)
@@ -203,10 +203,10 @@ shf make:persistence postgres
 # edits  src/SHFramework.slnx                                       (adds the project)
 # edits  src/WebApi/appsettings.json + appsettings.Development.json (adds "Persistence" section)
 
-shf make:persistence sqlserver --localdb
+dotnet shf make:persistence sqlserver --localdb
 # default conn: Server=(localdb)\mssqllocaldb;Database=AppDb;Trusted_Connection=true;
 
-shf make:persistence sqlite --connection-string "Data Source=cache.db"
+dotnet shf make:persistence sqlite --connection-string "Data Source=cache.db"
 ```
 
 After the files land, register the persistence in `Program.cs`:
@@ -247,7 +247,7 @@ The `appsettings` edit is idempotent — re-running won't clobber a user-customi
 Thin wrapper around `dotnet ef migrations add` that auto-detects the persistence project and the WebApi startup project. Saves you the four `--project` / `--startup-project` / `--output-dir` flags every time.
 
 ```bash
-shf make:migration AddForecastTable
+dotnet shf make:migration AddForecastTable
 # Equivalent to:
 # dotnet ef migrations add AddForecastTable \
 #     --project src/Persistence.PostgreSql/Persistence.PostgreSql.csproj \
@@ -260,7 +260,7 @@ shf make:migration AddForecastTable
 If you have more than one `Persistence.*` project under `src/`, the command refuses to guess — pass `--persistence`:
 
 ```bash
-shf make:migration RenameUserEmail --persistence Persistence.Sqlite
+dotnet shf make:migration RenameUserEmail --persistence Persistence.Sqlite
 ```
 
 ### Flags
