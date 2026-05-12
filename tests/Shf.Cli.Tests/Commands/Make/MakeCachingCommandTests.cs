@@ -96,28 +96,45 @@ public class MakeCachingCommandTests
     }
 
     [Fact]
-    public void Edits_SHFramework_slnx_to_add_the_new_project()
+    public void Edits_solution_file_to_add_the_new_project()
     {
         var (cmd, writer, _, _) = BuildCommand(slnxExists: true);
 
         cmd.Execute(Ctx(), new MakeCachingCommand.Settings { Name = "Redis", DryRun = true });
 
         writer.Received().ApplyEdit(
-            Arg.Is<string>(p => p.EndsWith("SHFramework.slnx")),
+            Arg.Is<string>(p => p.EndsWith(".slnx")),
+            Arg.Any<Func<string, string>>(),
+            Arg.Any<bool>());
+    }
+
+    [Fact]
+    public void Discovers_solution_file_by_extension_not_by_fixed_name()
+    {
+        var (cmd, writer, _, _) = BuildCommand(slnxExists: true, slnxFileName: "MyService.slnx");
+
+        cmd.Execute(Ctx(), new MakeCachingCommand.Settings { Name = "Redis", DryRun = true });
+
+        writer.Received().ApplyEdit(
+            Arg.Is<string>(p => p.EndsWith("MyService.slnx")),
             Arg.Any<Func<string, string>>(),
             Arg.Any<bool>());
     }
 
     private sealed class ModelCapture { public object? Last; }
 
-    private static (MakeCachingCommand cmd, IFileWriter writer, ITemplateRenderer renderer, ModelCapture capture) BuildCommand(bool slnxExists = false, bool enumExists = false)
+    private static (MakeCachingCommand cmd, IFileWriter writer, ITemplateRenderer renderer, ModelCapture capture) BuildCommand(bool slnxExists = false, bool enumExists = false, string slnxFileName = "SHFramework.slnx")
     {
         var locator = Substitute.For<IProjectLocator>();
         var businessRoot = "/repo/src/Business";
         if (slnxExists || enumExists)
         {
-            EnsureFixture(slnxExists, enumExists);
-            businessRoot = Path.Combine(SlnxFixtureDir, "Business");
+            var fixtureDir = EnsureFixture(slnxExists, enumExists, slnxFileName);
+            businessRoot = Path.Combine(fixtureDir, "Business");
+            if (slnxExists)
+            {
+                locator.FindSolutionFile(fixtureDir).Returns(Path.Combine(fixtureDir, slnxFileName));
+            }
         }
         locator.FindBusinessProject(Arg.Any<string>()).Returns(businessRoot);
 
@@ -131,14 +148,13 @@ public class MakeCachingCommandTests
         return (new MakeCachingCommand(locator, renderer, writer), writer, renderer, capture);
     }
 
-    private static readonly string SlnxFixtureDir = Path.Combine(Path.GetTempPath(), "shf-cli-tests-caching", "src");
-
-    private static void EnsureFixture(bool slnx, bool enumFile)
+    private static string EnsureFixture(bool slnx, bool enumFile, string slnxFileName)
     {
-        Directory.CreateDirectory(Path.Combine(SlnxFixtureDir, "Business", "Caching"));
+        var dir = Path.Combine(Path.GetTempPath(), "shf-cli-tests-caching", Path.GetFileNameWithoutExtension(slnxFileName), "src");
+        Directory.CreateDirectory(Path.Combine(dir, "Business", "Caching"));
         if (slnx)
         {
-            var path = Path.Combine(SlnxFixtureDir, "SHFramework.slnx");
+            var path = Path.Combine(dir, slnxFileName);
             if (!File.Exists(path))
             {
                 File.WriteAllText(path, "<Solution>\n  <Folder Name=\"/src/\">\n  </Folder>\n</Solution>\n");
@@ -146,12 +162,13 @@ public class MakeCachingCommandTests
         }
         if (enumFile)
         {
-            var path = Path.Combine(SlnxFixtureDir, "Business", "Caching", "CacheProviderType.cs");
+            var path = Path.Combine(dir, "Business", "Caching", "CacheProviderType.cs");
             if (!File.Exists(path))
             {
                 File.WriteAllText(path, "namespace Business.Caching;\npublic enum CacheProviderType\n{\n    InMemory = 0,\n}\n");
             }
         }
+        return dir;
     }
 
     private static CommandContext Ctx() => new([], Substitute.For<IRemainingArguments>(), "make:caching", null);

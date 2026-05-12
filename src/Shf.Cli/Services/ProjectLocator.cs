@@ -59,6 +59,14 @@ internal sealed class ProjectLocator : IProjectLocator
         return null;
     }
 
+    public string? FindSolutionFile(string searchDirectory)
+    {
+        if (!Directory.Exists(searchDirectory)) return null;
+        var slnx = Directory.EnumerateFiles(searchDirectory, "*.slnx").FirstOrDefault();
+        if (slnx is not null) return slnx;
+        return Directory.EnumerateFiles(searchDirectory, "*.sln").FirstOrDefault();
+    }
+
     public string? FindRepoRoot(string startDirectory)
     {
         foreach (var dir in WalkUp(startDirectory))

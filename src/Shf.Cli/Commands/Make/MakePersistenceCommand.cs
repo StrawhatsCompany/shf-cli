@@ -154,8 +154,8 @@ public sealed class MakePersistenceCommand(
         }
 
         // Solution edit
-        var slnxPath = Path.Combine(srcRoot, "SHFramework.slnx");
-        if (File.Exists(slnxPath))
+        var slnxPath = locator.FindSolutionFile(srcRoot);
+        if (slnxPath is not null)
         {
             try
             {
@@ -167,8 +167,12 @@ public sealed class MakePersistenceCommand(
             }
             catch (Exception ex)
             {
-                AnsiConsole.MarkupLine($"[yellow]warning:[/] could not update SHFramework.slnx ({ex.Message}); add the project manually.");
+                AnsiConsole.MarkupLine($"[yellow]warning:[/] could not update {Path.GetFileName(slnxPath)} ({ex.Message}); add the project manually.");
             }
+        }
+        else
+        {
+            AnsiConsole.MarkupLine($"[yellow]note:[/] no .slnx/.sln found in {Path.GetRelativePath(Directory.GetCurrentDirectory(), srcRoot)}; add the new project to your solution manually.");
         }
 
         // appsettings edits

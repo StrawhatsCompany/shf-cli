@@ -154,6 +154,20 @@ public class MakePersistenceCommandTests : IDisposable
     }
 
     [Fact]
+    public void Updates_slnx_when_solution_file_is_named_after_the_service()
+    {
+        File.Delete(Path.Combine(_srcRoot, "SHFramework.slnx"));
+        var renamedSlnx = Path.Combine(_srcRoot, "MyService.slnx");
+        File.WriteAllText(renamedSlnx, "<Solution>\n  <Folder Name=\"/src/\">\n  </Folder>\n</Solution>\n");
+
+        var cmd = BuildCommand();
+        cmd.Execute(Ctx(), new MakePersistenceCommand.Settings { Variant = "sqlite" });
+
+        var slnx = File.ReadAllText(renamedSlnx);
+        Assert.Contains("Persistence.Sqlite/Persistence.Sqlite.csproj", slnx);
+    }
+
+    [Fact]
     public void Returns_nonzero_for_unknown_variant()
     {
         var cmd = BuildCommand();
@@ -192,6 +206,13 @@ public class MakePersistenceCommandTests : IDisposable
         var locator = Substitute.For<IProjectLocator>();
         locator.FindBusinessProject(Arg.Any<string>()).Returns(_businessRoot);
         locator.FindWebApiProject(Arg.Any<string>()).Returns(_webApiRoot);
+        locator.FindSolutionFile(Arg.Any<string>()).Returns(call =>
+        {
+            var dir = call.Arg<string>();
+            if (!Directory.Exists(dir)) return null;
+            return Directory.EnumerateFiles(dir, "*.slnx").FirstOrDefault()
+                   ?? Directory.EnumerateFiles(dir, "*.sln").FirstOrDefault();
+        });
         return new MakePersistenceCommand(locator, new TokenTemplateRenderer(), new FileWriter());
     }
 
