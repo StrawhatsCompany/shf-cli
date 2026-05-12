@@ -11,7 +11,7 @@
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>dotnet-shf</ToolCommandName>
     <PackageId>StrawhatsCompany.SHFramework.Cli</PackageId>
-    <Version>0.3.4</Version>
+    <Version>0.4.0</Version>
     <Authors>Strawhats Company</Authors>
     <Description>Laravel-Artisan-style code generator for Strawhats Framework services. Scaffolds features, endpoints, entities, providers, and persistence projects.</Description>
     <PackageReadmeFile>README.md</PackageReadmeFile>
