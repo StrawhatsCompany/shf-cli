@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Shf.Cli.Commands.List;
 using Shf.Cli.Commands.Make;
 using Shf.Cli.Infrastructure;
 using Shf.Cli.Services;
@@ -9,6 +10,7 @@ services.AddSingleton<IProjectLocator, ProjectLocator>();
 services.AddSingleton<ITemplateRenderer, TokenTemplateRenderer>();
 services.AddSingleton<IFileWriter, FileWriter>();
 services.AddSingleton<IProcessRunner, ProcessRunner>();
+services.AddSingleton<IEndpointScanner, EndpointScanner>();
 
 var app = new CommandApp(new TypeRegistrar(services));
 
@@ -34,6 +36,12 @@ app.Configure(config =>
         .WithDescription("Scaffold a caching provider project (Caching.<Name>) wired to ICacheProvider.");
     config.AddCommand<MakeMigrationCommand>("make:migration")
         .WithDescription("Add a design-time EF Core migration to a persistence project.");
+
+    config.AddCommand<ListEndpointsCommand>("list:endpoints")
+        .WithDescription("List all IEndpoint implementations in the WebApi project as a table.")
+        .WithExample("list:endpoints")
+        .WithExample("list:endpoints", "--filter", "weather")
+        .WithExample("list:endpoints", "--json");
 });
 
 return await app.RunAsync(args);
