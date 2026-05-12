@@ -81,6 +81,7 @@ public sealed class MakePersistenceCommand(
 
     private const string CouchbaseClientVersion = "3.6.5";
     private const string CouchbaseDiVersion = "3.6.5";
+    private const string ShCqrsEfCoreVersion = "10.0.3";
 
     public override int Execute(CommandContext context, Settings settings)
     {
@@ -118,6 +119,7 @@ public sealed class MakePersistenceCommand(
             DefaultConnectionString = connectionString,
             CouchbaseClientVersion = CouchbaseClientVersion,
             CouchbaseDiVersion = CouchbaseDiVersion,
+            ShCqrsEfCoreVersion = ShCqrsEfCoreVersion,
         };
 
         var templatesRoot = Path.Combine(AppContext.BaseDirectory, "Templates", "Persistence");

@@ -70,6 +70,32 @@ public class MakePersistenceCommandTests : IDisposable
         Assert.False(File.Exists(Path.Combine(projRoot, "CouchbaseDbContextFactory.cs")));
     }
 
+    [Theory]
+    [InlineData("postgres", "PostgreSql")]
+    [InlineData("sqlserver", "SqlServer")]
+    [InlineData("sqlite", "Sqlite")]
+    public void EfCore_variants_pull_in_sh_cqrs_ef_core_lib(string arg, string folderName)
+    {
+        var cmd = BuildCommand();
+
+        cmd.Execute(Ctx(), new MakePersistenceCommand.Settings { Variant = arg });
+
+        var csproj = File.ReadAllText(Path.Combine(_srcRoot, $"Persistence.{folderName}", $"Persistence.{folderName}.csproj"));
+        Assert.Contains("SH.Framework.Library.Cqrs.Implementation.EntityFrameworkCore", csproj);
+        Assert.Contains("Version=\"10.0.3\"", csproj);
+    }
+
+    [Fact]
+    public void Couchbase_csproj_does_not_pull_in_sh_cqrs_ef_core_lib()
+    {
+        var cmd = BuildCommand();
+
+        cmd.Execute(Ctx(), new MakePersistenceCommand.Settings { Variant = "couchbase" });
+
+        var csproj = File.ReadAllText(Path.Combine(_srcRoot, "Persistence.Couchbase", "Persistence.Couchbase.csproj"));
+        Assert.DoesNotContain("SH.Framework.Library.Cqrs.Implementation.EntityFrameworkCore", csproj);
+    }
+
     [Fact]
     public void Couchbase_csproj_pulls_in_couchbase_packages()
     {

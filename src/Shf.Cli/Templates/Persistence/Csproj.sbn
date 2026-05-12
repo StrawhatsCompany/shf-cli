@@ -13,6 +13,7 @@
         <PrivateAssets>all</PrivateAssets>
       </PackageReference>
       <PackageReference Include="{{ EfPackage }}" Version="{{ EfPackageVersion }}" />
+      <PackageReference Include="SH.Framework.Library.Cqrs.Implementation.EntityFrameworkCore" Version="{{ ShCqrsEfCoreVersion }}" />
     </ItemGroup>
 
     <ItemGroup>
