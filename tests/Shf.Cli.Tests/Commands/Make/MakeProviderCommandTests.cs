@@ -81,14 +81,27 @@ public class MakeProviderCommandTests
     }
 
     [Fact]
-    public void Edits_SHFramework_slnx_to_add_the_new_project()
+    public void Edits_solution_file_to_add_the_new_project()
     {
         var (cmd, writer, _, _) = BuildCommand(slnxExists: true);
 
         cmd.Execute(Ctx(), new MakeProviderCommand.Settings { Name = "Sms", DryRun = true });
 
         writer.Received().ApplyEdit(
-            Arg.Is<string>(p => p.EndsWith("SHFramework.slnx")),
+            Arg.Is<string>(p => p.EndsWith(".slnx")),
+            Arg.Any<Func<string, string>>(),
+            Arg.Any<bool>());
+    }
+
+    [Fact]
+    public void Discovers_solution_file_by_extension_not_by_fixed_name()
+    {
+        var (cmd, writer, _, _) = BuildCommand(slnxExists: true, slnxFileName: "MyService.slnx");
+
+        cmd.Execute(Ctx(), new MakeProviderCommand.Settings { Name = "Sms", DryRun = true });
+
+        writer.Received().ApplyEdit(
+            Arg.Is<string>(p => p.EndsWith("MyService.slnx")),
             Arg.Any<Func<string, string>>(),
             Arg.Any<bool>());
     }
@@ -129,7 +142,7 @@ public class MakeProviderCommandTests
 
     private sealed class ModelCapture { public object? Last; }
 
-    private static (MakeProviderCommand cmd, IFileWriter writer, ITemplateRenderer renderer, ModelCapture capture) BuildCommand(bool slnxExists = false)
+    private static (MakeProviderCommand cmd, IFileWriter writer, ITemplateRenderer renderer, ModelCapture capture) BuildCommand(bool slnxExists = false, string slnxFileName = "SHFramework.slnx")
     {
         var locator = Substitute.For<IProjectLocator>();
         locator.FindBusinessProject(Arg.Any<string>()).Returns("/repo/src/Business");
@@ -139,25 +152,25 @@ public class MakeProviderCommandTests
         var writer = Substitute.For<IFileWriter>();
         writer.Write(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<bool>(), Arg.Any<bool>()).Returns(true);
         writer.ApplyEdit(Arg.Any<string>(), Arg.Any<Func<string, string>>(), Arg.Any<bool>()).Returns("<Solution/>");
-        // Real File.Exists is checked for the slnx — point the locator at a directory where the file does or doesn't exist.
         if (slnxExists)
         {
-            EnsureFixtureSlnx();
-            locator.FindBusinessProject(Arg.Any<string>()).Returns(Path.Combine(SlnxFixtureDir, "Business"));
+            var fixtureDir = EnsureFixtureSlnx(slnxFileName);
+            locator.FindBusinessProject(Arg.Any<string>()).Returns(Path.Combine(fixtureDir, "Business"));
+            locator.FindSolutionFile(fixtureDir).Returns(Path.Combine(fixtureDir, slnxFileName));
         }
         return (new MakeProviderCommand(locator, renderer, writer), writer, renderer, capture);
     }
 
-    private static readonly string SlnxFixtureDir = Path.Combine(Path.GetTempPath(), "shf-cli-tests", "src");
-
-    private static void EnsureFixtureSlnx()
+    private static string EnsureFixtureSlnx(string fileName)
     {
-        Directory.CreateDirectory(Path.Combine(SlnxFixtureDir, "Business"));
-        var slnx = Path.Combine(SlnxFixtureDir, "SHFramework.slnx");
+        var dir = Path.Combine(Path.GetTempPath(), "shf-cli-tests", Path.GetFileNameWithoutExtension(fileName), "src");
+        Directory.CreateDirectory(Path.Combine(dir, "Business"));
+        var slnx = Path.Combine(dir, fileName);
         if (!File.Exists(slnx))
         {
             File.WriteAllText(slnx, "<Solution>\n  <Folder Name=\"/src/\">\n  </Folder>\n</Solution>\n");
         }
+        return dir;
     }
 
     private static CommandContext Ctx() => new([], Substitute.For<IRemainingArguments>(), "make:provider", null);

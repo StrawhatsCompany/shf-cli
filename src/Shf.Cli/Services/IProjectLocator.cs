@@ -26,4 +26,12 @@ public interface IProjectLocator
     /// a `src` folder with a `Domain` project. Returns the absolute path of that `src/Domain`.
     /// </summary>
     string? FindDomainProject(string startDirectory);
+
+    /// <summary>
+    /// Returns the absolute path of the solution file (`.slnx` preferred, `.sln` as fallback)
+    /// in <paramref name="searchDirectory"/>. The filename is service-specific in scaffolded
+    /// projects (e.g. `MyService.slnx`), so callers must not assume a fixed name.
+    /// Returns null if no solution file is present.
+    /// </summary>
+    string? FindSolutionFile(string searchDirectory);
 }

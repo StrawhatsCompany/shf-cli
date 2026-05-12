@@ -104,8 +104,8 @@ public sealed class MakeProviderCommand(
             }
         }
 
-        var slnxPath = Path.Combine(srcRoot, "SHFramework.slnx");
-        if (File.Exists(slnxPath))
+        var slnxPath = locator.FindSolutionFile(srcRoot);
+        if (slnxPath is not null)
         {
             try
             {
@@ -117,12 +117,12 @@ public sealed class MakeProviderCommand(
             }
             catch (Exception ex)
             {
-                AnsiConsole.MarkupLine($"[yellow]warning:[/] could not update SHFramework.slnx ({ex.Message}); add `<Project Path=\"Providers.{name}/Providers.{name}.csproj\" />` manually.");
+                AnsiConsole.MarkupLine($"[yellow]warning:[/] could not update {Path.GetFileName(slnxPath)} ({ex.Message}); add `<Project Path=\"Providers.{name}/Providers.{name}.csproj\" />` manually.");
             }
         }
         else
         {
-            AnsiConsole.MarkupLine($"[yellow]note:[/] SHFramework.slnx not found; add the new project to your solution manually.");
+            AnsiConsole.MarkupLine($"[yellow]note:[/] no .slnx/.sln found in {Path.GetRelativePath(Directory.GetCurrentDirectory(), srcRoot)}; add the new project to your solution manually.");
         }
 
         AnsiConsole.MarkupLine($"  [dim]hint:[/] register in [cyan]Program.cs[/] with [yellow]builder.Services.Add{name}Provider();[/]");

@@ -109,8 +109,8 @@ public sealed class MakeCachingCommand(
             AnsiConsole.MarkupLine($"[yellow]warning:[/] {Path.GetRelativePath(Directory.GetCurrentDirectory(), enumPath)} not found; add [yellow]{name}[/] to your CacheProviderType enum manually.");
         }
 
-        var slnxPath = Path.Combine(srcRoot, "SHFramework.slnx");
-        if (File.Exists(slnxPath))
+        var slnxPath = locator.FindSolutionFile(srcRoot);
+        if (slnxPath is not null)
         {
             try
             {
@@ -122,12 +122,12 @@ public sealed class MakeCachingCommand(
             }
             catch (Exception ex)
             {
-                AnsiConsole.MarkupLine($"[yellow]warning:[/] could not update SHFramework.slnx ({ex.Message}); add the project manually.");
+                AnsiConsole.MarkupLine($"[yellow]warning:[/] could not update {Path.GetFileName(slnxPath)} ({ex.Message}); add the project manually.");
             }
         }
         else
         {
-            AnsiConsole.MarkupLine($"[yellow]note:[/] SHFramework.slnx not found; add the new project to your solution manually.");
+            AnsiConsole.MarkupLine($"[yellow]note:[/] no .slnx/.sln found in {Path.GetRelativePath(Directory.GetCurrentDirectory(), srcRoot)}; add the new project to your solution manually.");
         }
 
         AnsiConsole.MarkupLine($"  [dim]hint:[/] register in [cyan]Program.cs[/] with [yellow]builder.Services.Add{name}Caching(builder.Configuration);[/]");
