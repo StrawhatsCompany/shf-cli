@@ -11,6 +11,8 @@ services.AddSingleton<ITemplateRenderer, TokenTemplateRenderer>();
 services.AddSingleton<IFileWriter, FileWriter>();
 services.AddSingleton<IProcessRunner, ProcessRunner>();
 services.AddSingleton<IEndpointScanner, EndpointScanner>();
+services.AddSingleton<IAuthTemplateLoader, AuthTemplateLoader>();
+services.AddSingleton<IGitHubIssueClient, GitHubIssueClient>();
 
 var app = new CommandApp(new TypeRegistrar(services));
 
@@ -36,6 +38,11 @@ app.Configure(config =>
         .WithDescription("Scaffold a caching provider project (Caching.<Name>) wired to ICacheProvider.");
     config.AddCommand<MakeMigrationCommand>("make:migration")
         .WithDescription("Add a design-time EF Core migration to a persistence project.");
+    config.AddCommand<MakeAuthenticationCommand>("make:authentication")
+        .WithDescription("Plan an authentication implementation — interactive picker (or --types csv), opens GitHub issues per selected feature with implementation guidance against the sh-framework-template reference.")
+        .WithExample("make:authentication")
+        .WithExample("make:authentication", "--types", "jwt,refresh,apikey", "--no-tenant")
+        .WithExample("make:authentication", "--types", "all", "--tenant", "--dry-run");
 
     config.AddCommand<ListEndpointsCommand>("list:endpoints")
         .WithDescription("List all IEndpoint implementations in the WebApi project as a table.")
