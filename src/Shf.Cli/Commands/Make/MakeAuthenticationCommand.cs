@@ -7,7 +7,8 @@ namespace Shf.Cli.Commands.Make;
 
 public sealed class MakeAuthenticationCommand(
     IAuthTemplateLoader templates,
-    IGitHubIssueClient github) : Command<MakeAuthenticationCommand.Settings>
+    IAuthScaffolder scaffolder,
+    IProjectLocator locator) : Command<MakeAuthenticationCommand.Settings>
 {
     public sealed class Settings : CommandSettings
     {
@@ -23,12 +24,12 @@ public sealed class MakeAuthenticationCommand(
         [Description("Skip multi-tenancy. Cannot be combined with --tenant.")]
         public bool NoTenant { get; init; }
 
-        [CommandOption("--repo <OWNER/REPO>")]
-        [Description("Target GitHub repo for the emitted issues. Defaults to the cwd's origin remote.")]
-        public string? Repo { get; init; }
+        [CommandOption("--force")]
+        [Description("Overwrite existing files.")]
+        public bool Force { get; init; }
 
         [CommandOption("--dry-run")]
-        [Description("Print the plan and the resolved issue list without calling gh.")]
+        [Description("Print the plan without writing files or modifying Program.cs / RegisterBusiness.cs.")]
         public bool DryRun { get; init; }
     }
 
@@ -52,7 +53,15 @@ public sealed class MakeAuthenticationCommand(
             return 1;
         }
 
-        // 1. Pick the auth types — flags first, then interactive.
+        var businessRoot = locator.FindBusinessProject(Directory.GetCurrentDirectory());
+        if (businessRoot is null)
+        {
+            AnsiConsole.MarkupLine("[red]Could not locate the Business project. Run from inside a Strawhats Framework service.[/]");
+            return 1;
+        }
+        var srcRoot = Path.GetDirectoryName(businessRoot)!;
+
+        // 1. Select types — flags first, then interactive.
         HashSet<string> selected;
         if (!string.IsNullOrEmpty(settings.Types))
         {
@@ -87,90 +96,89 @@ public sealed class MakeAuthenticationCommand(
         else if (settings.NoTenant) includeTenant = false;
         else includeTenant = AnsiConsole.Confirm("Include multi-tenancy (TenantId on every entity)?", defaultValue: true);
 
-        // 4. Resolve target repo.
-        var repo = settings.Repo ?? github.DetectRepoFromGit(Directory.GetCurrentDirectory());
-        if (string.IsNullOrEmpty(repo))
-        {
-            AnsiConsole.MarkupLine("[red]Could not detect GitHub repo from origin remote. Pass --repo owner/name or run inside a git checkout with a github.com origin.[/]");
-            return 1;
-        }
-
-        // 5. Build the final ordered slug list (foundations first, then tenant if opted in, then deps order).
+        // 4. Build the final ordered slug list (foundations first, then tenant if opted in, then deps order).
         var ordered = new List<string> { "foundations" };
         if (includeTenant) ordered.Add("tenant");
         ordered.AddRange(TopologicalOrder(resolved));
 
-        // 6. Load templates and emit.
-        var allTemplates = templates.LoadAll().ToDictionary(t => t.Slug, StringComparer.OrdinalIgnoreCase);
-        var missing = ordered.Where(s => !allTemplates.ContainsKey(s)).ToList();
-        if (missing.Count > 0)
-        {
-            AnsiConsole.MarkupLine($"[red]Missing template files for: {string.Join(", ", missing)}.[/]");
-            AnsiConsole.MarkupLine("[red]The CLI was packaged without one or more Authentication templates — please file an issue.[/]");
-            return 1;
-        }
-
-        AnsiConsole.Write(new Rule($"[bold]Authentication scaffolding plan[/] → [cyan]{repo}[/]").LeftJustified());
+        // 5. Show plan.
+        AnsiConsole.Write(new Rule("[bold]Authentication scaffolding plan[/]").LeftJustified());
+        var byTitle = templates.LoadAll().ToDictionary(t => t.Slug, StringComparer.OrdinalIgnoreCase);
         var table = new Table().Border(TableBorder.Rounded)
             .AddColumn("[bold]#[/]")
             .AddColumn("[bold]Slug[/]")
-            .AddColumn("[bold]Title[/]");
+            .AddColumn("[bold]Title[/]")
+            .AddColumn("[bold]Code template[/]");
         for (var i = 0; i < ordered.Count; i++)
         {
-            var t = allTemplates[ordered[i]];
-            table.AddRow($"{i + 1}", t.Slug, Markup.Escape(t.Title));
+            var slug = ordered[i];
+            var title = byTitle.TryGetValue(slug, out var tmpl) ? tmpl.Title : slug;
+            var hasCode = scaffolder.HasCodeTemplate(slug) ? "[green]yes[/]" : "[yellow]not yet[/]";
+            table.AddRow($"{i + 1}", slug, Markup.Escape(title), hasCode);
         }
         AnsiConsole.Write(table);
         AnsiConsole.MarkupLine($"[dim]Tenancy: {(includeTenant ? "ENABLED — TenantId on every owned entity" : "DISABLED — single-tenant")}[/]");
+        AnsiConsole.MarkupLine($"[dim]Target:  {Path.GetRelativePath(Directory.GetCurrentDirectory(), srcRoot)}[/]");
 
         if (settings.DryRun)
         {
-            AnsiConsole.MarkupLine("[yellow]--dry-run: no issues created.[/]");
+            AnsiConsole.MarkupLine("[yellow]--dry-run: no files written.[/]");
             return 0;
         }
 
-        if (!AnsiConsole.Confirm($"Create {ordered.Count} GitHub issues on [cyan]{repo}[/]?", defaultValue: true))
+        if (!AnsiConsole.Confirm($"Scaffold {ordered.Count} slice(s) into [cyan]{Path.GetRelativePath(Directory.GetCurrentDirectory(), srcRoot)}[/]?", defaultValue: true))
         {
             AnsiConsole.MarkupLine("[yellow]Cancelled.[/]");
             return 0;
         }
 
-        // 7. Ensure labels exist.
-        var allLabels = ordered.SelectMany(slug => allTemplates[slug].Labels).Distinct().ToList();
-        foreach (var label in allLabels)
-        {
-            github.EnsureLabel(repo, label, "Auto-created by `shf make:authentication`", "0E8A16");
-        }
-
-        // 8. First pass: create issues, capture numbers.
-        var slugToIssue = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        // 6. Emit each slice.
+        var emitted = 0;
+        var skipped = new List<string>();
         foreach (var slug in ordered)
         {
-            var template = allTemplates[slug];
-            var body = ApplyTenancyVariant(template.Body, includeTenant);
-            var number = github.CreateIssue(repo, template.Title, body, template.Labels);
-            if (number is null)
+            if (!scaffolder.HasCodeTemplate(slug))
             {
-                AnsiConsole.MarkupLine($"[red]Failed to create issue for [white]{slug}[/].[/]");
-                return 1;
+                skipped.Add(slug);
+                continue;
             }
-            slugToIssue[slug] = number.Value;
-            AnsiConsole.MarkupLine($"[green]created[/] #{number} — {Markup.Escape(template.Title)}");
+
+            AnsiConsole.MarkupLine($"\n[bold cyan]{slug}[/]");
+            var files = scaffolder.EmitFiles(slug, srcRoot, settings.Force, settings.DryRun);
+            foreach (var file in files)
+            {
+                if (file.StartsWith("(skipped"))
+                {
+                    AnsiConsole.MarkupLine($"  [yellow]{Markup.Escape(file)}[/]");
+                }
+                else
+                {
+                    AnsiConsole.MarkupLine($"  [green]wrote[/] {Markup.Escape(file)}");
+                }
+            }
+
+            var wiring = scaffolder.ApplyWiring(slug, srcRoot, settings.DryRun);
+            foreach (var msg in wiring)
+            {
+                AnsiConsole.MarkupLine($"  [dim]wiring:[/] {Markup.Escape(msg)}");
+            }
+            emitted++;
         }
 
-        // 9. Second pass: patch bodies to replace {{slug:foo}} placeholders with #NN.
-        foreach (var slug in ordered)
+        if (skipped.Count > 0)
         {
-            var template = allTemplates[slug];
-            var body = ApplyTenancyVariant(template.Body, includeTenant);
-            var patched = SubstitutePlaceholders(body, slugToIssue);
-            if (patched != body)
-            {
-                github.EditIssueBody(repo, slugToIssue[slug], patched);
-            }
+            AnsiConsole.MarkupLine($"\n[yellow]No code template yet for:[/] {string.Join(", ", skipped)}");
+            AnsiConsole.MarkupLine("[dim]These slices are coming in a future shf-cli release — pin the framework template version manually for now (StrawhatsCompany/sh-framework-template @ v3.7.0+).[/]");
         }
 
-        AnsiConsole.MarkupLine($"\n[green]Done.[/] {ordered.Count} issues opened on [cyan]{repo}[/].");
+        if (emitted == 0)
+        {
+            AnsiConsole.MarkupLine("[yellow]Nothing scaffolded — no slices in your selection have code templates yet.[/]");
+            return 0;
+        }
+
+        AnsiConsole.MarkupLine($"\n[green]Done.[/] Scaffolded {emitted} slice(s) into [cyan]{Path.GetRelativePath(Directory.GetCurrentDirectory(), srcRoot)}[/].");
+        AnsiConsole.MarkupLine("[dim]Next: run [yellow]dotnet build[/] to verify, then commit the changes.[/]");
         return 0;
     }
 
@@ -194,7 +202,6 @@ public sealed class MakeAuthenticationCommand(
             .PageSize(12)
             .InstructionsText("[grey](Press [blue]space[/] to toggle, [green]enter[/] to confirm)[/]")
             .AddChoices(AuthTypes.Select(t => $"{t.Key}  —  {t.Label}"));
-        // Pre-tick the common starting set.
         prompt.Select($"identity  —  {AuthTypes.First(t => t.Key == "identity").Label}");
         prompt.Select($"jwt  —  {AuthTypes.First(t => t.Key == "jwt").Label}");
         prompt.Select($"refresh  —  {AuthTypes.First(t => t.Key == "refresh").Label}");
@@ -245,45 +252,5 @@ public sealed class MakeAuthenticationCommand(
             if (selected.Contains(key)) Visit(key);
         }
         return ordered;
-    }
-
-    private static string ApplyTenancyVariant(string body, bool includeTenant)
-    {
-        // Templates can use {{#tenant}}…{{/tenant}} blocks that render only when tenancy is on,
-        // and {{#no-tenant}}…{{/no-tenant}} blocks for the opposite. Plus a {{tenant-flag}}
-        // marker that renders "ENABLED" or "DISABLED".
-        var open = includeTenant ? "{{#tenant}}" : "{{#no-tenant}}";
-        var close = includeTenant ? "{{/tenant}}" : "{{/no-tenant}}";
-        var keepBlock = ExtractBlock(body, open, close);
-        var stripOpen = includeTenant ? "{{#no-tenant}}" : "{{#tenant}}";
-        var stripClose = includeTenant ? "{{/no-tenant}}" : "{{/tenant}}";
-        var trimmed = StripBlock(keepBlock, stripOpen, stripClose);
-        return trimmed.Replace("{{tenant-flag}}", includeTenant ? "ENABLED" : "DISABLED", StringComparison.Ordinal);
-    }
-
-    private static string ExtractBlock(string body, string open, string close)
-    {
-        return body.Replace(open, "", StringComparison.Ordinal).Replace(close, "", StringComparison.Ordinal);
-    }
-
-    private static string StripBlock(string body, string open, string close)
-    {
-        while (true)
-        {
-            var start = body.IndexOf(open, StringComparison.Ordinal);
-            if (start < 0) return body;
-            var end = body.IndexOf(close, start, StringComparison.Ordinal);
-            if (end < 0) return body;
-            body = body.Remove(start, (end + close.Length) - start);
-        }
-    }
-
-    private static string SubstitutePlaceholders(string body, IReadOnlyDictionary<string, int> slugToIssue)
-    {
-        foreach (var (slug, number) in slugToIssue)
-        {
-            body = body.Replace($"{{{{slug:{slug}}}}}", $"#{number}", StringComparison.OrdinalIgnoreCase);
-        }
-        return body;
     }
 }

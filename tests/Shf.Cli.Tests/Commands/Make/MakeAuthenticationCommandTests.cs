@@ -9,7 +9,7 @@ public class MakeAuthenticationCommandTests
     [Fact]
     public void Returns_nonzero_when_tenant_and_no_tenant_both_set()
     {
-        var (cmd, _, _) = Build();
+        var (cmd, _, _, _) = Build();
 
         var exit = cmd.Execute(Ctx(), new MakeAuthenticationCommand.Settings
         {
@@ -20,27 +20,39 @@ public class MakeAuthenticationCommandTests
     }
 
     [Fact]
-    public void DryRun_with_explicit_types_emits_no_issues()
+    public void Returns_nonzero_when_business_project_cannot_be_located()
     {
-        var (cmd, _, github) = Build();
+        var (cmd, _, _, locator) = Build();
+        locator.FindBusinessProject(Arg.Any<string>()).Returns((string?)null);
 
         var exit = cmd.Execute(Ctx(), new MakeAuthenticationCommand.Settings
         {
-            Types = "jwt,refresh,apikey",
-            Tenant = true,
-            Repo = "acme/example",
-            DryRun = true,
+            Types = "jwt", Tenant = true, DryRun = true,
+        });
+
+        Assert.NotEqual(0, exit);
+    }
+
+    [Fact]
+    public void DryRun_does_not_emit_files()
+    {
+        var (cmd, _, scaffolder, _) = Build();
+        scaffolder.HasCodeTemplate(Arg.Any<string>()).Returns(true);
+
+        var exit = cmd.Execute(Ctx(), new MakeAuthenticationCommand.Settings
+        {
+            Types = "jwt", Tenant = true, DryRun = true,
         });
 
         Assert.Equal(0, exit);
-        github.DidNotReceive().CreateIssue(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<IReadOnlyCollection<string>>());
+        scaffolder.DidNotReceive().EmitFiles(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<bool>(), Arg.Any<bool>());
+        scaffolder.DidNotReceive().ApplyWiring(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<bool>());
     }
 
     [Fact]
     public void Returns_nonzero_when_types_csv_is_invalid()
     {
-        var (cmd, _, _) = Build();
+        var (cmd, _, _, _) = Build();
 
         var exit = cmd.Execute(Ctx(), new MakeAuthenticationCommand.Settings
         {
@@ -53,56 +65,45 @@ public class MakeAuthenticationCommandTests
     [Fact]
     public void All_keyword_includes_every_known_type()
     {
-        var (cmd, templates, _) = Build();
+        var (cmd, _, scaffolder, _) = Build();
+        scaffolder.HasCodeTemplate(Arg.Any<string>()).Returns(true);
 
         var exit = cmd.Execute(Ctx(), new MakeAuthenticationCommand.Settings
         {
-            Types = "all",
-            Tenant = true,
-            Repo = "acme/example",
-            DryRun = true,
+            Types = "all", Tenant = true, DryRun = true,
         });
 
         Assert.Equal(0, exit);
-        // Loader was queried — the command at least walked the template set.
-        templates.Received().LoadAll();
+        // foundations + tenant + 8 selected types = 10; HasCodeTemplate queried for each.
+        scaffolder.Received(10).HasCodeTemplate(Arg.Any<string>());
     }
 
-    [Fact]
-    public void Returns_nonzero_when_repo_cannot_be_detected()
-    {
-        var (cmd, _, github) = Build();
-        github.DetectRepoFromGit(Arg.Any<string>()).Returns((string?)null);
-
-        var exit = cmd.Execute(Ctx(), new MakeAuthenticationCommand.Settings
-        {
-            Types = "jwt", Tenant = true, DryRun = true,
-        });
-
-        Assert.NotEqual(0, exit);
-    }
-
-    private static (MakeAuthenticationCommand cmd, IAuthTemplateLoader templates, IGitHubIssueClient github) Build()
+    private static (
+        MakeAuthenticationCommand cmd,
+        IAuthTemplateLoader templates,
+        IAuthScaffolder scaffolder,
+        IProjectLocator locator) Build()
     {
         var templates = Substitute.For<IAuthTemplateLoader>();
         templates.LoadAll().Returns(FakeTemplates());
-        var github = Substitute.For<IGitHubIssueClient>();
-        github.DetectRepoFromGit(Arg.Any<string>()).Returns("acme/example");
-        return (new MakeAuthenticationCommand(templates, github), templates, github);
+        var scaffolder = Substitute.For<IAuthScaffolder>();
+        var locator = Substitute.For<IProjectLocator>();
+        locator.FindBusinessProject(Arg.Any<string>()).Returns("/repo/src/Business");
+        return (new MakeAuthenticationCommand(templates, scaffolder, locator), templates, scaffolder, locator);
     }
 
     private static IReadOnlyList<AuthTemplate> FakeTemplates() =>
     [
-        new("foundations", "Foundations",  ["enhancement"], [], "body"),
-        new("tenant",      "Tenant",       ["enhancement"], ["foundations"], "body"),
-        new("identity",    "Identity",     ["enhancement"], ["foundations"], "body"),
-        new("jwt",         "JWT",          ["enhancement"], ["identity"], "body"),
-        new("refresh",     "Refresh",      ["enhancement"], ["jwt"], "body"),
-        new("apikey",      "ApiKey",       ["enhancement"], ["identity"], "body"),
-        new("mfa-totp",    "MFA TOTP",     ["enhancement"], ["jwt"], "body"),
-        new("mfa-email",   "MFA Email",    ["enhancement"], ["mfa-totp"], "body"),
-        new("mfa-sms",     "MFA SMS",      ["enhancement"], ["mfa-totp"], "body"),
-        new("sso",         "SSO",          ["enhancement"], ["refresh"], "body"),
+        new("foundations", "Foundations",  [], [], "body"),
+        new("tenant",      "Tenant",       [], ["foundations"], "body"),
+        new("identity",    "Identity",     [], ["foundations"], "body"),
+        new("jwt",         "JWT",          [], ["identity"], "body"),
+        new("refresh",     "Refresh",      [], ["jwt"], "body"),
+        new("apikey",      "ApiKey",       [], ["identity"], "body"),
+        new("mfa-totp",    "MFA TOTP",     [], ["jwt"], "body"),
+        new("mfa-email",   "MFA Email",    [], ["mfa-totp"], "body"),
+        new("mfa-sms",     "MFA SMS",      [], ["mfa-totp"], "body"),
+        new("sso",         "SSO",          [], ["refresh"], "body"),
     ];
 
     private static CommandContext Ctx() => new([], Substitute.For<IRemainingArguments>(), "make:authentication", null);
