@@ -11,7 +11,7 @@
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>dotnet-shf</ToolCommandName>
     <PackageId>StrawhatsCompany.SHFramework.Cli</PackageId>
-    <Version>0.5.0</Version>
+    <Version>0.6.0</Version>
     <Authors>Strawhats Company</Authors>
     <Description>Laravel-Artisan-style code generator for Strawhats Framework services. Scaffolds features, endpoints, entities, providers, and persistence projects.</Description>
     <PackageReadmeFile>README.md</PackageReadmeFile>
@@ -33,6 +33,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Templates ship as data, not as compiled code. The .cs files under Templates/ are
+         literal source the CLI writes into consumer projects — they reference types the CLI
+         doesn't depend on (e.g. IHttpContextAccessor), so they must NOT be picked up by the
+         default Compile glob. -->
+    <Compile Remove="Templates\**\*.cs" />
+    <None Include="Templates\**\*.cs">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="Templates\**\*.sbn">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

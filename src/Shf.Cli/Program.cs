@@ -12,7 +12,7 @@ services.AddSingleton<IFileWriter, FileWriter>();
 services.AddSingleton<IProcessRunner, ProcessRunner>();
 services.AddSingleton<IEndpointScanner, EndpointScanner>();
 services.AddSingleton<IAuthTemplateLoader, AuthTemplateLoader>();
-services.AddSingleton<IGitHubIssueClient, GitHubIssueClient>();
+services.AddSingleton<IAuthScaffolder, AuthScaffolder>();
 
 var app = new CommandApp(new TypeRegistrar(services));
 
@@ -39,7 +39,7 @@ app.Configure(config =>
     config.AddCommand<MakeMigrationCommand>("make:migration")
         .WithDescription("Add a design-time EF Core migration to a persistence project.");
     config.AddCommand<MakeAuthenticationCommand>("make:authentication")
-        .WithDescription("Plan an authentication implementation — interactive picker (or --types csv), opens GitHub issues per selected feature with implementation guidance against the sh-framework-template reference.")
+        .WithDescription("Scaffold authentication code from framework templates. Interactive multi-select (or --types csv) + --tenant/--no-tenant. Writes source files into Domain/Business/WebApi and wires Program.cs / RegisterBusiness.cs.")
         .WithExample("make:authentication")
         .WithExample("make:authentication", "--types", "jwt,refresh,apikey", "--no-tenant")
         .WithExample("make:authentication", "--types", "all", "--tenant", "--dry-run");
